@@ -1,6 +1,5 @@
-// src/background/index.ts
 import { initiateLogin } from './auth';
-import { getUnreadEmails } from './jmap';
+import { getUnreadEmails, markEmailRead, archiveEmail } from './jmap';
 
 const ALARM_NAME = 'POLL_FASTMAIL';
 
@@ -21,6 +20,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     getUnreadEmails().then(emails => {
       sendResponse({ emails });
       updateBadgeCount(emails.length);
+    });
+    return true;
+  }
+
+  if (message.type === 'MARK_READ') {
+    markEmailRead(message.emailId).then(success => {
+      if (success) updateBadge(); // Update badge count after marking read
+      sendResponse({ success });
+    });
+    return true;
+  }
+
+  if (message.type === 'ARCHIVE') {
+    archiveEmail(message.emailId).then(success => {
+      if (success) updateBadge();
+      sendResponse({ success });
     });
     return true;
   }
