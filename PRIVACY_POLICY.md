@@ -1,9 +1,9 @@
-# Privacy Policy for Fastmail Checker
+# Privacy Policy for Checker for Fastmail
 
 **Last Updated:** August 2026
 
 ## Overview
-Fastmail Checker ("the Extension") is an open-source Chrome Extension designed to provide quick access to your Fastmail unread emails. We take your privacy extremely seriously. 
+Checker for Fastmail ("the Extension") is an open-source Chrome Extension designed to provide quick access to your Fastmail unread emails. We take your privacy extremely seriously. 
 
 Our core principle is simple: **Zero external data collection.**
 

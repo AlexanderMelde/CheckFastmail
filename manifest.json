@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Fastmail Checker",
+  "name": "Checker for Fastmail",
   "description": "Check your Fastmail unread messages quickly.",
   "version": "1.0.0",
   "permissions": [
@@ -18,7 +18,7 @@
   },
   "action": {
     "default_popup": "src/popup/index.html",
-    "default_title": "Fastmail Checker"
+    "default_title": "Checker for Fastmail"
   },
   "options_ui": {
     "page": "src/options/index.html",

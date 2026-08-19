@@ -79,7 +79,7 @@
         class="p-2 bg-blue-700 hover:bg-blue-800 rounded transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white"
         aria-label="Refresh"
       >
-        Refresh Now
+        Refresh Now 2
       </button>
     {/if}
   </header>
@@ -115,7 +115,7 @@
           </svg>
         </div>
         <h2 class="text-lg font-semibold text-slate-800">
-          Welcome to Fastmail Checker
+          Welcome to Checker for Fastmail
         </h2>
         <p class="text-sm text-slate-500 max-w-[200px]">
           Please connect your Fastmail account to view your unread messages.
