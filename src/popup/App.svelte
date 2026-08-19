@@ -68,7 +68,7 @@
   }
 </script>
 
-<main class="flex flex-col bg-white h-[400px]">
+<main class="flex flex-col bg-white h-[600px]">
   <header
     class="flex justify-between items-center bg-blue-600 text-white p-4 shrink-0"
   >
@@ -96,7 +96,7 @@
       </div>
     {:else if notAuthenticated}
       <div
-        class="flex flex-col items-center justify-center h-full text-center space-y-4 mt-12"
+        class="flex flex-col items-center justify-center h-full text-center space-y-4"
       >
         <div class="bg-blue-50 text-blue-600 p-3 rounded-full mb-2">
           <svg
