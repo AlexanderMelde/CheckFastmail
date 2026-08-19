@@ -58,12 +58,12 @@ export async function fetchSession(): Promise<JmapSession | null> {
   }
 }
 
-export async function getUnreadEmails(): Promise<any[]> {
-  const session = await fetchSession();
-  if (!session) return [];
+export async function getUnreadEmails(): Promise<{ emails: any[], notAuthenticated?: boolean }> {
+  const token = await getAccessToken();
+  if (!token) return { emails: [], notAuthenticated: true };
 
-  let token = await getAccessToken();
-  if (!token) return [];
+  const session = await fetchSession();
+  if (!session) return { emails: [], notAuthenticated: true };
 
   try {
     // Phase 1: Query for unread email IDs
@@ -93,14 +93,14 @@ export async function getUnreadEmails(): Promise<any[]> {
       if (newToken) {
         return getUnreadEmails(); // Retry with new token
       }
-      return [];
+      return { emails: [], notAuthenticated: true };
     }
 
     const queryData = await queryResponse.json();
     const emailIds = queryData.methodResponses[0][1].ids;
 
     if (!emailIds || emailIds.length === 0) {
-      return [];
+      return { emails: [] };
     }
 
     // Phase 2: Get details for those IDs
@@ -127,11 +127,11 @@ export async function getUnreadEmails(): Promise<any[]> {
     });
 
     const getData = await getResponse.json();
-    return getData.methodResponses[0][1].list;
+    return { emails: getData.methodResponses[0][1].list };
 
   } catch (err) {
     console.error('JMAP query error:', err);
-    return [];
+    return { emails: [] };
   }
 }
 

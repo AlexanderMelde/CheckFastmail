@@ -17,9 +17,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   
   if (message.type === 'FETCH_UNREAD') {
-    getUnreadEmails().then(emails => {
-      sendResponse({ emails });
-      updateBadgeCount(emails.length);
+    getUnreadEmails().then(result => {
+      sendResponse(result);
+      if (result.emails) {
+        updateBadgeCount(result.emails.length);
+      }
     });
     return true;
   }
@@ -51,8 +53,10 @@ async function updateBadgeCount(count: number) {
 }
 
 async function updateBadge() {
-  const emails = await getUnreadEmails();
-  await updateBadgeCount(emails.length);
+  const result = await getUnreadEmails();
+  if (result.emails) {
+    await updateBadgeCount(result.emails.length);
+  }
 }
 
 // Polling setup
