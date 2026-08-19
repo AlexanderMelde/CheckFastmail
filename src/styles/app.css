@@ -1,7 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 body {
-  @apply m-0 text-slate-800 bg-slate-50 font-sans;
+  margin: 0;
+  color: #1e293b; /* text-slate-800 */
+  background-color: #f8fafc; /* bg-slate-50 */
+  font-family: ui-sans-serif, system-ui, sans-serif;
 }
