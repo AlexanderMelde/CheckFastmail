@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Checker for Fastmail",
+  "description": "Check your Fastmail unread messages quickly.",
+  "version": "1.0.0",
+  "homepage_url": "https://check-fastmail.melde.net",
+  "author": {
+    "email": "check-fastmail@melde.net"
+  },
+  "permissions": [
+    "storage",
+    "alarms",
+    "contextMenus"
+  ],
+  "icons": {
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "action": {
+    "default_popup": "src/extension/popup/index.html",
+    "default_title": "Checker for Fastmail",
+    "default_icon": {
+      "16": "icon-16.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  },
+  "options_ui": {
+    "page": "src/extension/options/index.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "service_worker": "src/extension/background/index.ts",
+    "type": "module"
+  }
+}
