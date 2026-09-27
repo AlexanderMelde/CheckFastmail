@@ -517,6 +517,94 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       expect(result.error).toBe('JMAP error: accountNotFound');
     });
 
+    it('surfaces JMAP method error with description when present in getUnreadEmails', async () => {
+      mockStorage = {
+        access_token: 'valid-token',
+        api_url: 'https://api.fastmail.com/jmap/api/',
+        account_id: 'acc-mail',
+        inbox_id: 'inbox-id'
+      };
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          methodResponses: [
+            ['error', { type: 'cannotCalculateChanges', description: 'Query state expired' }, 'q']
+          ]
+        })
+      } as Response);
+
+      const result = await getUnreadEmails();
+      expect(result.emails).toEqual([]);
+      expect(result.error).toBe('JMAP error: cannotCalculateChanges: Query state expired');
+    });
+
+    it('omits inMailbox filter when getInboxId returns null (fallback query)', async () => {
+      mockStorage = {
+        access_token: 'valid-token',
+        api_url: 'https://api.fastmail.com/jmap/api/',
+        account_id: 'acc-mail'
+        // Notice no inbox_id
+      };
+
+      let sentBody: any = null;
+      vi.spyOn(globalThis, 'fetch')
+        // First fetch is getInboxId (Mailbox/query) -> returns empty list
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: async () => ({ methodResponses: [['Mailbox/query', { ids: [] }, '0']] })
+        } as Response)
+        // Second fetch is getUnreadEmails
+        .mockImplementationOnce(async (_url, init) => {
+          sentBody = JSON.parse(init?.body as string);
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              methodResponses: [
+                ['Email/query', { ids: [] }, 'q'],
+                ['Email/get', { list: [] }, 'g']
+              ]
+            })
+          } as Response;
+        });
+
+      await getUnreadEmails();
+      expect(sentBody).not.toBeNull();
+      const queryCall = sentBody.methodCalls.find(([name]: [string]) => name === 'Email/query');
+      expect(queryCall[1].filter).toEqual({ notKeyword: '$seen' });
+      expect(queryCall[1].filter.inMailbox).toBeUndefined();
+    });
+
+    it('passes abort signal with request timeout to API fetch', async () => {
+      mockStorage = {
+        access_token: 'valid-token',
+        api_url: 'https://api.fastmail.com/jmap/api/',
+        account_id: 'acc-mail',
+        inbox_id: 'inbox-id'
+      };
+
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          methodResponses: [
+            ['Email/get', { list: [] }, 'g']
+          ]
+        })
+      } as Response);
+
+      await getUnreadEmails();
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://api.fastmail.com/jmap/api/',
+        expect.objectContaining({
+          signal: expect.any(AbortSignal)
+        })
+      );
+    });
+
     it('surfaces network fetch rejection error cleanly', async () => {
       mockStorage = {
         access_token: 'valid-token',

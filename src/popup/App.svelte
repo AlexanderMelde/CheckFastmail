@@ -1,10 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import type {
-    EmailItem,
-    FetchUnreadResponse,
-    FetchEmailBodyResponse,
-  } from "../types";
+  import type { EmailItem } from "../types";
+  import { extensionClient } from "../services/extensionClient";
   import Header from "../components/Header.svelte";
   import RefreshButton from "../components/RefreshButton.svelte";
   import SettingsButton from "../components/SettingsButton.svelte";
@@ -27,7 +24,7 @@
 
   const MIN_LOADING_SPINNER_MS = 300;
 
-  function fetchEmails() {
+  async function fetchEmails() {
     isLoading = true;
     errorMsg = "";
 
@@ -41,60 +38,43 @@
       }
     };
 
-    chrome.runtime.sendMessage(
-      { type: "FETCH_UNREAD" },
-      (response: FetchUnreadResponse) => {
-        hasInitialized = true;
-        if (chrome.runtime.lastError) {
-          errorMsg = "Error communicating with background script.";
-          finishLoading();
-          return;
-        }
+    const response = await extensionClient.fetchUnread();
+    hasInitialized = true;
 
-        if (response && response.notAuthenticated) {
-          isAuthenticated = false;
-        } else if (response && response.error) {
-          errorMsg = response.error;
-        } else if (response && response.emails) {
-          isAuthenticated = true;
-          unreadEmails = response.emails;
-          if (unreadEmails.length > 0) {
-            const stillSelected =
-              selectedEmail &&
-              unreadEmails.find((e) => e.id === selectedEmail?.id);
-            if (!stillSelected) {
-              selectEmail(unreadEmails[0]);
-            }
-          } else {
-            selectedEmail = null;
-            emailBody = null;
-            emailBodyError = false;
-          }
-        } else {
-          errorMsg =
-            "Failed to fetch emails. Please check your connection in Options.";
+    if (response.notAuthenticated) {
+      isAuthenticated = false;
+    } else if (response.error) {
+      errorMsg = response.error;
+    } else if (response.emails) {
+      isAuthenticated = true;
+      unreadEmails = response.emails;
+      if (unreadEmails.length > 0) {
+        const stillSelected =
+          selectedEmail &&
+          unreadEmails.find((e) => e.id === selectedEmail?.id);
+        if (!stillSelected) {
+          selectEmail(unreadEmails[0]);
         }
-        finishLoading();
-      },
-    );
+      } else {
+        selectedEmail = null;
+        emailBody = null;
+        emailBodyError = false;
+      }
+    } else {
+      errorMsg =
+        "Failed to fetch emails. Please check your connection in Options.";
+    }
+    finishLoading();
   }
 
   onMount(() => {
     fetchEmails();
 
-    const storageListener = (
-      changes: { [key: string]: chrome.storage.StorageChange },
-      areaName: string,
-    ) => {
-      if (areaName === "local" && "access_token" in changes) {
-        fetchEmails();
-      }
-    };
+    const unsubscribe = extensionClient.onTokenChanged(() => {
+      fetchEmails();
+    });
 
-    chrome.storage?.onChanged?.addListener(storageListener);
-    return () => {
-      chrome.storage?.onChanged?.removeListener(storageListener);
-    };
+    return unsubscribe;
   });
 
   function handleRefresh() {
@@ -102,10 +82,10 @@
   }
 
   function openOptions() {
-    chrome.runtime.openOptionsPage();
+    extensionClient.openOptionsPage();
   }
 
-  function selectEmail(email: EmailItem) {
+  async function selectEmail(email: EmailItem) {
     if (selectedEmail?.id === email.id && emailBody !== null && !emailBodyError)
       return;
     if (selectedEmail?.id === email.id && isLoadingBody) return;
@@ -116,35 +96,22 @@
     isPlainText = false;
     isLoadingBody = true;
 
-    chrome.runtime.sendMessage(
-      { type: "FETCH_EMAIL_BODY", emailId: email.id },
-      (response: FetchEmailBodyResponse) => {
-        if (chrome.runtime.lastError) {
-          if (selectedEmail && selectedEmail.id === email.id) {
-            isLoadingBody = false;
-            emailBody = "Error communicating with background script.";
-            emailBodyError = true;
-            isPlainText = true;
-          }
-          return;
-        }
+    const response = await extensionClient.fetchEmailBody(email.id);
 
-        if (selectedEmail && selectedEmail.id === email.id) {
-          isLoadingBody = false;
-          if (response && response.body !== null) {
-            emailBody = response.body;
-            emailBodyError = false;
-            isPlainText = Boolean(response.isPlainText);
-          } else {
-            emailBody = response?.error
-              ? `Error: ${response.error}`
-              : "Could not load email content.";
-            emailBodyError = true;
-            isPlainText = true;
-          }
-        }
-      },
-    );
+    if (selectedEmail && selectedEmail.id === email.id) {
+      isLoadingBody = false;
+      if (response && response.body !== null) {
+        emailBody = response.body;
+        emailBodyError = false;
+        isPlainText = Boolean(response.isPlainText);
+      } else {
+        emailBody = response?.error
+          ? `Error: ${response.error}`
+          : "Could not load email content.";
+        emailBodyError = true;
+        isPlainText = true;
+      }
+    }
   }
 </script>
 

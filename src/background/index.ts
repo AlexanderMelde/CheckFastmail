@@ -1,5 +1,6 @@
-import { getUnreadEmails, fetchSession, fetchEmailBody, clearSession } from './jmap';
+import { getUnreadEmails, fetchSession, fetchEmailBody } from './jmap';
 import type { MessageRequest } from '../types';
+import { STORAGE_KEYS } from '../types';
 
 export const ALARM_NAME = 'POLL_FASTMAIL';
 export const POLL_INTERVAL_MINUTES = 5;
@@ -46,12 +47,12 @@ chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResp
     fetchSession(true, token)
       .then((session) => {
         if (session) {
-          chrome.storage.local.remove(['inbox_id'], () => {
+          chrome.storage.local.remove([STORAGE_KEYS.INBOX_ID], () => {
             chrome.storage.local.set(
               {
-                access_token: token,
-                api_url: session.apiUrl,
-                account_id: session.accountId
+                [STORAGE_KEYS.ACCESS_TOKEN]: token,
+                [STORAGE_KEYS.API_URL]: session.apiUrl,
+                [STORAGE_KEYS.ACCOUNT_ID]: session.accountId
               },
               () => {
                 sendResponse({ success: true });
@@ -116,14 +117,26 @@ export async function updateBadgeCount(count: number): Promise<void> {
   }
 }
 
+let inFlightUpdateBadge: Promise<void> | null = null;
+
 export async function updateBadge(): Promise<void> {
-  const result = await getUnreadEmails();
-  if (!result) return;
-  if (result.notAuthenticated) {
-    await updateBadgeCount(0);
-  } else if (!result.error && result.emails) {
-    await updateBadgeCount(result.emails.length);
-  }
+  if (inFlightUpdateBadge) return inFlightUpdateBadge;
+
+  inFlightUpdateBadge = (async () => {
+    try {
+      const result = await getUnreadEmails();
+      if (!result) return;
+      if (result.notAuthenticated) {
+        await updateBadgeCount(0);
+      } else if (!result.error && result.emails) {
+        await updateBadgeCount(result.emails.length);
+      }
+    } finally {
+      inFlightUpdateBadge = null;
+    }
+  })();
+
+  return inFlightUpdateBadge;
 }
 
 export function setupAlarm(): void {
@@ -147,14 +160,18 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 // Single root-cause lifecycle listener for token additions and removals
 chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === 'local' && 'access_token' in changes) {
-    const newToken = changes.access_token.newValue;
+  if (areaName === 'local' && STORAGE_KEYS.ACCESS_TOKEN in changes) {
+    const newToken = changes[STORAGE_KEYS.ACCESS_TOKEN].newValue;
     if (!newToken) {
       chrome.alarms.clear(ALARM_NAME);
       updateBadgeCount(0);
-      chrome.storage.local.remove(['inbox_id', 'api_url', 'account_id']);
+      chrome.storage.local.remove([
+        STORAGE_KEYS.INBOX_ID,
+        STORAGE_KEYS.API_URL,
+        STORAGE_KEYS.ACCOUNT_ID
+      ]);
     } else {
-      chrome.storage.local.remove(['inbox_id']);
+      chrome.storage.local.remove([STORAGE_KEYS.INBOX_ID]);
       setupAlarm();
       updateBadge();
     }
@@ -162,8 +179,8 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 // Initial service worker startup
-chrome.storage.local.get(['access_token'], (result) => {
-  if (result?.access_token) {
+chrome.storage.local.get([STORAGE_KEYS.ACCESS_TOKEN], (result) => {
+  if (result?.[STORAGE_KEYS.ACCESS_TOKEN]) {
     setupAlarm();
     updateBadge();
   }

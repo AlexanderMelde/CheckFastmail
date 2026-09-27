@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SaveTokenResponse } from "../types";
+  import { extensionClient } from "../services/extensionClient";
 
   interface Props {
     isConnected: boolean;
@@ -11,7 +11,7 @@
   let isSaving = $state(false);
   let errorMsg = $state("");
 
-  function handleSave() {
+  async function handleSave() {
     if (!apiToken.trim()) {
       errorMsg = "Please enter an API token";
       return;
@@ -20,34 +20,22 @@
     isSaving = true;
     errorMsg = "";
 
-    chrome.runtime.sendMessage(
-      { type: "TEST_AND_SAVE_TOKEN", token: apiToken.trim() },
-      (response: SaveTokenResponse) => {
-        isSaving = false;
-        if (chrome.runtime.lastError) {
-          errorMsg =
-            "Error communicating with background worker. Please reload the extension.";
-          return;
-        }
-        if (response && response.success) {
-          isConnected = true;
-          apiToken = "";
-        } else {
-          errorMsg =
-            "Invalid token or connection failed. Please check your token and try again.";
-        }
-      },
-    );
+    const success = await extensionClient.testAndSaveToken(apiToken.trim());
+    isSaving = false;
+
+    if (success) {
+      isConnected = true;
+      apiToken = "";
+    } else {
+      errorMsg =
+        "Invalid token or connection failed. Please check your token and try again.";
+    }
   }
 
-  function handleDisconnect() {
+  async function handleDisconnect() {
     errorMsg = "";
-    chrome.storage.local.remove(
-      ["access_token", "account_id", "api_url", "inbox_id"],
-      () => {
-        isConnected = false;
-      },
-    );
+    await extensionClient.disconnect();
+    isConnected = false;
   }
 </script>
 

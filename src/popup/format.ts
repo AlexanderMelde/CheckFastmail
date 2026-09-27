@@ -23,15 +23,19 @@ export function formatTime(dateString: string): string {
   return isCurrentYear ? dateFormatter.format(d) : yearDateFormatter.format(d);
 }
 
+export const FASTMAIL_MESSAGE_URL_PREFIX = 'https://www.fastmail.com/mail/Message/';
 const INITIALS_FALLBACK_LENGTH = 2;
 
 export function getInitials(name?: string): string {
   if (!name) return '?';
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    const firstChar = Array.from(parts[0])[0] || '';
+    const lastChar = Array.from(parts[parts.length - 1])[0] || '';
+    return (firstChar + lastChar).toUpperCase();
   }
-  return (name.trim().substring(0, INITIALS_FALLBACK_LENGTH) || '?').toUpperCase();
+  const chars = Array.from(name.trim());
+  return (chars.slice(0, INITIALS_FALLBACK_LENGTH).join('') || '?').toUpperCase();
 }
 
 export function escapeHtml(str?: string): string {
@@ -64,7 +68,7 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
     ? fullDateTimeFormatter.format(receivedDate)
     : '';
 
-  const openUrl = 'https://www.fastmail.com/mail/Message/' + encodeURIComponent(email.id);
+  const openUrl = FASTMAIL_MESSAGE_URL_PREFIX + encodeURIComponent(email.id);
 
   const securityHead = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline';"><base target="_blank">`;
 
@@ -153,6 +157,14 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
   if (bodyTagMatch) {
     renderedBody = renderedBody.replace(bodyTagMatch[0], () => bodyTagMatch[0] + trackerFixStyle + headerHtml);
     return `<head>${securityHead}</head>` + renderedBody;
+  }
+
+  if (headTagMatch) {
+    renderedBody = renderedBody.replace(headTagMatch[0], () => headTagMatch[0] + securityHead);
+    const closeHeadMatch = renderedBody.match(/<\/head>/i);
+    if (closeHeadMatch) {
+      return renderedBody.replace(closeHeadMatch[0], () => closeHeadMatch[0] + trackerFixStyle + headerHtml);
+    }
   }
 
   return securityHead + trackerFixStyle + headerHtml + renderedBody;

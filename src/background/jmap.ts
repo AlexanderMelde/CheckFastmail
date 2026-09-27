@@ -1,17 +1,20 @@
 import type { EmailItem, JmapSession, FetchEmailBodyResponse, FetchUnreadResponse, EmailDetail } from '../types';
+import { STORAGE_KEYS, ALL_AUTH_KEYS } from '../types';
 
 const SESSION_URL = 'https://api.fastmail.com/jmap/session';
 export const HTTP_STATUS_UNAUTHORIZED = 401;
 export const UNREAD_EMAILS_LIMIT = 30;
 export const MAX_BODY_VALUE_BYTES = 1048576; // 1 MB per RFC 8621 §4.1.4
+export const REQUEST_TIMEOUT_MS = 15000; // 15 seconds per request timeout
 
 async function getAccessToken(): Promise<string | null> {
-  const result = (await chrome.storage.local.get(['access_token'])) || {};
-  return typeof result.access_token === 'string' ? result.access_token.trim() || null : null;
+  const result = (await chrome.storage.local.get([STORAGE_KEYS.ACCESS_TOKEN])) || {};
+  const token = result[STORAGE_KEYS.ACCESS_TOKEN];
+  return typeof token === 'string' ? token.trim() || null : null;
 }
 
 export async function clearSession(): Promise<void> {
-  await chrome.storage.local.remove(['access_token', 'api_url', 'account_id', 'inbox_id']);
+  await chrome.storage.local.remove([...ALL_AUTH_KEYS]);
 }
 
 export async function fetchSession(forceRefresh = false, tokenOverride?: string): Promise<JmapSession | null> {
@@ -21,9 +24,11 @@ export async function fetchSession(forceRefresh = false, tokenOverride?: string)
   const isTestingToken = Boolean(tokenOverride);
 
   if (!forceRefresh && !isTestingToken) {
-    const result = (await chrome.storage.local.get(['api_url', 'account_id'])) || {};
-    if (result.api_url && result.account_id) {
-      return { apiUrl: result.api_url as string, accountId: result.account_id as string };
+    const result = (await chrome.storage.local.get([STORAGE_KEYS.API_URL, STORAGE_KEYS.ACCOUNT_ID])) || {};
+    const apiUrl = result[STORAGE_KEYS.API_URL];
+    const accountId = result[STORAGE_KEYS.ACCOUNT_ID];
+    if (apiUrl && accountId) {
+      return { apiUrl: apiUrl as string, accountId: accountId as string };
     }
   }
 
@@ -32,7 +37,8 @@ export async function fetchSession(forceRefresh = false, tokenOverride?: string)
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/json'
-      }
+      },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
     });
 
     if (response.status === HTTP_STATUS_UNAUTHORIZED) {
@@ -67,8 +73,8 @@ export async function fetchSession(forceRefresh = false, tokenOverride?: string)
 
     if (!isTestingToken) {
       await chrome.storage.local.set({
-        api_url: apiUrl,
-        account_id: accountId
+        [STORAGE_KEYS.API_URL]: apiUrl,
+        [STORAGE_KEYS.ACCOUNT_ID]: accountId
       });
     }
 
@@ -79,8 +85,8 @@ export async function fetchSession(forceRefresh = false, tokenOverride?: string)
 }
 
 export async function getInboxId(session: JmapSession, token: string): Promise<string | null> {
-  const result = (await chrome.storage.local.get(['inbox_id'])) || {};
-  if (result.inbox_id) return result.inbox_id as string;
+  const result = (await chrome.storage.local.get([STORAGE_KEYS.INBOX_ID])) || {};
+  if (result[STORAGE_KEYS.INBOX_ID]) return result[STORAGE_KEYS.INBOX_ID] as string;
 
   try {
     const response = await fetch(session.apiUrl, {
@@ -102,7 +108,8 @@ export async function getInboxId(session: JmapSession, token: string): Promise<s
             '0'
           ]
         ]
-      })
+      }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
     });
 
     if (response.status === HTTP_STATUS_UNAUTHORIZED) {
@@ -116,7 +123,7 @@ export async function getInboxId(session: JmapSession, token: string): Promise<s
     const inboxId = data.methodResponses?.[0]?.[1]?.ids?.[0];
 
     if (inboxId) {
-      await chrome.storage.local.set({ inbox_id: inboxId });
+      await chrome.storage.local.set({ [STORAGE_KEYS.INBOX_ID]: inboxId });
       return inboxId as string;
     }
   } catch {
@@ -174,7 +181,8 @@ export async function getUnreadEmails(): Promise<FetchUnreadResponse> {
             'g'
           ]
         ]
-      })
+      }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
     });
 
     if (response.status === HTTP_STATUS_UNAUTHORIZED) {
@@ -192,8 +200,10 @@ export async function getUnreadEmails(): Promise<FetchUnreadResponse> {
     // Check for method-level errors
     for (const [name, resp] of methodResponses) {
       if (name === 'error') {
-        const errorType = (resp as { type?: string })?.type || 'unknown';
-        return { emails: [], error: `JMAP error: ${errorType}` };
+        const errInfo = resp as { type?: string; description?: string } | undefined;
+        const errorType = errInfo?.type || 'unknown';
+        const descStr = errInfo?.description ? `: ${errInfo.description}` : '';
+        return { emails: [], error: `JMAP error: ${errorType}${descStr}` };
       }
     }
 
@@ -273,7 +283,8 @@ export async function fetchEmailBody(emailId: string): Promise<FetchEmailBodyRes
             '0'
           ]
         ]
-      })
+      }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
     });
 
     if (response.status === HTTP_STATUS_UNAUTHORIZED) {

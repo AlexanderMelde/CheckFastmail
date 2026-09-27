@@ -50,6 +50,11 @@ describe('getInitials', () => {
   it('handles excessive spaces', () => {
     expect(getInitials('   Jane    Smith   ')).toBe('JS');
   });
+
+  it('handles unicode and emoji characters without surrogate pair truncation', () => {
+    expect(getInitials('🎉 Party')).toBe('🎉P');
+    expect(getInitials('🚀')).toBe('🚀');
+  });
 });
 
 describe('escapeHtml', () => {
@@ -140,5 +145,20 @@ describe('buildIframeContent', () => {
   it('handles non-string escapeHtml gracefully', () => {
     expect(escapeHtml(123 as any)).toBe('');
     expect(escapeHtml(null as any)).toBe('');
+  });
+
+  it('injects tracker pixel hiding styles (trackerFixStyle)', () => {
+    const result = buildIframeContent(sampleEmail, '<p>Body</p>');
+    expect(result).toContain('img[width="1"][height="1"]');
+    expect(result).toContain('display: none !important');
+  });
+
+  it('handles HTML with head tag but no body tag correctly', () => {
+    const headOnlyHtml = '<html><head><title>Test</title></head><div>No body tag</div></html>';
+    const result = buildIframeContent(sampleEmail, headOnlyHtml);
+    expect(result).toContain('<head><meta http-equiv="Content-Security-Policy"');
+    expect(result).toContain('</head>');
+    expect(result).toContain('Project Update');
+    expect(result).toContain('<div>No body tag</div>');
   });
 });

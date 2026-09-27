@@ -57,3 +57,19 @@ export interface EmailDetail {
   preview?: string;
 }
 
+export const STORAGE_KEYS = {
+  ACCESS_TOKEN: 'access_token',
+  API_URL: 'api_url',
+  ACCOUNT_ID: 'account_id',
+  INBOX_ID: 'inbox_id'
+} as const;
+
+export const ALL_AUTH_KEYS = [
+  STORAGE_KEYS.ACCESS_TOKEN,
+  STORAGE_KEYS.API_URL,
+  STORAGE_KEYS.ACCOUNT_ID,
+  STORAGE_KEYS.INBOX_ID
+] as const;
+
+export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
+

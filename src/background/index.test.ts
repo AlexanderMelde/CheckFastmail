@@ -147,6 +147,26 @@ describe('Background Worker Lifecycle & Badge Management', () => {
       expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '3' });
       expect(mockAction.setBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#2563eb' });
     });
+
+    it('deduplicates concurrent updateBadge calls so only one getUnreadEmails runs', async () => {
+      let resolveFetch!: (val: any) => void;
+      const fetchPromise = new Promise<FetchUnreadResponse>((res) => {
+        resolveFetch = res;
+      });
+      mockJmap.getUnreadEmails.mockReturnValueOnce(fetchPromise);
+
+      const call1 = updateBadge();
+      const call2 = updateBadge();
+
+      resolveFetch({
+        emails: [{ id: '1', receivedAt: '2026-09-28T00:00:00Z' }]
+      });
+
+      await Promise.all([call1, call2]);
+
+      expect(mockJmap.getUnreadEmails).toHaveBeenCalledTimes(1);
+      expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '1' });
+    });
   });
 
   describe('setupAlarm', () => {

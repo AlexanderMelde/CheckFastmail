@@ -3,28 +3,20 @@
   import Header from "../components/Header.svelte";
   import SettingsSidebar from "../components/SettingsSidebar.svelte";
   import ConnectionSettings from "../components/ConnectionSettings.svelte";
+  import { extensionClient } from "../services/extensionClient";
 
   let isConnected = $state(false);
 
   onMount(() => {
-    chrome.storage.local.get(["access_token"], (result) => {
-      if (result.access_token) {
-        isConnected = true;
-      }
+    extensionClient.getStoredToken().then((token) => {
+      isConnected = Boolean(token);
     });
 
-    const listener = (
-      changes: { [key: string]: chrome.storage.StorageChange },
-      areaName: string,
-    ) => {
-      if (areaName === "local" && "access_token" in changes) {
-        isConnected = Boolean(changes.access_token.newValue);
-      }
-    };
-    chrome.storage.onChanged.addListener(listener);
-    return () => {
-      chrome.storage.onChanged.removeListener(listener);
-    };
+    const unsubscribe = extensionClient.onTokenChanged((token) => {
+      isConnected = Boolean(token);
+    });
+
+    return unsubscribe;
   });
 </script>
 
