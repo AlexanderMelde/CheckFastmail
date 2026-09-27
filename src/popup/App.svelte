@@ -1,13 +1,16 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import type { EmailItem, FetchUnreadResponse, FetchEmailBodyResponse } from "../types";
+  import { formatTime, buildIframeContent } from "./format";
 
-  let unreadEmails = $state<any[]>([]);
+  let unreadEmails = $state<EmailItem[]>([]);
   let isLoading = $state(true);
   let errorMsg = $state("");
   let notAuthenticated = $state(false);
 
-  let selectedEmail = $state<any>(null);
+  let selectedEmail = $state<EmailItem | null>(null);
   let emailBody = $state<string | null>(null);
+  let isPlainText = $state(false);
   let isLoadingBody = $state(false);
 
   function fetchEmails() {
@@ -25,7 +28,7 @@
       }
     };
 
-    chrome.runtime.sendMessage({ type: "FETCH_UNREAD" }, (response) => {
+    chrome.runtime.sendMessage({ type: "FETCH_UNREAD" }, (response: FetchUnreadResponse) => {
       if (chrome.runtime.lastError) {
         errorMsg = "Error communicating with background script.";
         finishLoading();
@@ -38,14 +41,13 @@
         unreadEmails = response.emails;
         if (
           selectedEmail &&
-          !unreadEmails.find((e) => e.id === selectedEmail.id)
+          !unreadEmails.find((e) => e.id === selectedEmail?.id)
         ) {
           selectedEmail = null;
           emailBody = null;
         }
       } else {
-        errorMsg =
-          "Failed to fetch emails. Please check your connection in Options.";
+        errorMsg = "Failed to fetch emails. Please check your connection in Options.";
       }
       finishLoading();
     });
@@ -63,162 +65,27 @@
     chrome.runtime.openOptionsPage();
   }
 
-  function handleMarkRead(email: any, event: MouseEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    unreadEmails = unreadEmails.filter((e) => e.id !== email.id);
-    if (selectedEmail && selectedEmail.id === email.id) {
-      selectedEmail = null;
-      emailBody = null;
-    }
-
-    chrome.runtime.sendMessage({ type: "MARK_READ", emailId: email.id });
-  }
-
-  function handleArchive(email: any, event: MouseEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    unreadEmails = unreadEmails.filter((e) => e.id !== email.id);
-    if (selectedEmail && selectedEmail.id === email.id) {
-      selectedEmail = null;
-      emailBody = null;
-    }
-
-    chrome.runtime.sendMessage({ type: "ARCHIVE", emailId: email.id });
-  }
-
-  function selectEmail(email: any, event: MouseEvent) {
-    event.preventDefault();
+  function selectEmail(email: EmailItem) {
     selectedEmail = email;
     emailBody = null;
+    isPlainText = false;
     isLoadingBody = true;
 
     chrome.runtime.sendMessage(
       { type: "FETCH_EMAIL_BODY", emailId: email.id },
-      (response) => {
+      (response: FetchEmailBodyResponse) => {
         if (selectedEmail && selectedEmail.id === email.id) {
           isLoadingBody = false;
-          if (response && response.body) {
+          if (response && response.body !== null) {
             emailBody = response.body;
+            isPlainText = Boolean(response.isPlainText);
           } else {
-            emailBody =
-              "Could not load email content. It might be plain text or unsupported.";
+            emailBody = "Could not load email content.";
+            isPlainText = true;
           }
         }
-      },
+      }
     );
-  }
-
-  function formatTime(dateString: string) {
-    const d = new Date(dateString);
-    const today = new Date();
-    const isToday = d.getDate() === today.getDate() &&
-                    d.getMonth() === today.getMonth() &&
-                    d.getFullYear() === today.getFullYear();
-                    
-    if (isToday) {
-      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    } else {
-      return d.toLocaleDateString([], { month: "short", day: "numeric" });
-    }
-  }
-
-  function getInitials(name: string) {
-    if (!name) return "?";
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  }
-
-  function buildIframeContent(email: any, bodyHtml: string) {
-    const subject = email.subject || "(No Subject)";
-    const fromNameOnly = email.from?.[0]?.name || email.from?.[0]?.email || 'Unknown';
-    const fromEmailOnly = (email.from?.[0]?.name && email.from?.[0]?.email) ? `<${email.from[0].email}>` : '';
-    const toNameOnly = email.to?.[0]?.email || email.to?.[0]?.name || 'you';
-    const initials = getInitials(email.from?.[0]?.name || email.from?.[0]?.email);
-    const date = new Date(email.receivedAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
-    const openUrl = `https://www.fastmail.com/mail/Message/${email.id}`;
-
-    const escapeHtml = (str: string) => {
-      if (!str) return '';
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    };
-    
-    const headerHtml = `
-      <style>
-        .ext-open-btn {
-          all: initial !important; box-sizing: border-box !important; position: absolute !important; top: 9px !important; right: 18px !important; display: inline-flex !important; padding: 6px !important; background: transparent !important; color: #47515a !important; border-radius: 6px !important; text-decoration: none !important; cursor: pointer !important; transition: all 0.15s ease !important; height: 28px !important; width: 28px !important; align-items: center !important; justify-content: center !important; margin: 0 !important;
-        }
-        .ext-open-btn:hover {
-          background: rgba(51, 62, 72, .05) !important; color: #2d3236 !important;
-        }
-        .ext-open-btn:active {
-          background: rgba(51, 62, 72, .1) !important;
-        }
-        .ext-open-btn svg {
-          width: 17px !important; height: 17px !important; display: block !important; margin: 0 !important; padding: 0 !important;
-        }
-        
-        /* Custom scrollbar to match the list pane */
-        ::-webkit-scrollbar {
-          width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-          background-color: #cbd5e1;
-          border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-          background-color: #94a3b8;
-        }
-      </style>
-      <div style="all: initial !important; display: block !important; box-sizing: border-box !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; padding: 9px 18px !important; border-bottom: 1px solid #e2e8f0 !important; background: #fff !important; position: relative !important; margin: 0 !important; height: auto !important; max-height: none !important; min-height: 0 !important;">
-        <a href="${openUrl}" target="_blank" rel="noopener noreferrer" title="Open in Fastmail" class="ext-open-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-        </a>
-        <h2 style="all: initial !important; display: block !important; box-sizing: border-box !important; color: #1e293b !important; margin: 0 0 12px 0 !important; padding: 0 40px 0 0 !important; font-family: 'Proxima Nova', system-ui, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', -apple-system, Arial, sans-serif !important; font-feature-settings: normal !important; font-kerning: auto !important; font-language-override: normal !important; font-optical-sizing: auto !important; font-size: 17.7188px !important; font-weight: 700 !important; line-height: 24px !important; height: auto !important; max-height: none !important; min-height: 0 !important; text-align: left !important;">
-          ${escapeHtml(subject)}
-        </h2>
-        <div style="all: initial !important; display: flex !important; box-sizing: border-box !important; align-items: center !important; gap: 16px !important; font-family: inherit !important; margin: 0 !important; padding: 0 !important; height: auto !important; flex-direction: row !important;">
-          <div style="all: initial !important; display: flex !important; box-sizing: border-box !important; width: 40px !important; height: 40px !important; border-radius: 50% !important; background: linear-gradient(to top right, #7c33e8, #ab65ff) !important; color: #fff !important; align-items: center !important; justify-content: center !important; font-size: 15px !important; font-weight: 500 !important; letter-spacing: 0.5px !important; box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important; font-family: inherit !important; flex-shrink: 0 !important; margin: 0 !important; padding: 0 !important;">
-            ${escapeHtml(initials)}
-          </div>
-          <div style="all: initial !important; display: flex !important; box-sizing: border-box !important; flex-direction: column !important; min-width: 0 !important; font-family: inherit !important; margin: 0 !important; padding: 0 !important; height: auto !important; justify-content: center !important; width: 100% !important;">
-            <div style="all: initial !important; display: flex !important; box-sizing: border-box !important; align-items: center !important; font-family: inherit !important; margin: 0 !important; padding: 0 !important; width: 100% !important; gap: 6px !important;">
-              <span style="all: initial !important; font-family: inherit !important; font-size: 14px !important; font-weight: 600 !important; color: #1e293b !important; height: 20px !important; line-height: 20px !important; letter-spacing: normal !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; flex-shrink: 0 !important;">
-                ${escapeHtml(fromNameOnly)}
-              </span>
-              ${fromEmailOnly ? `<span title="${escapeHtml(email.from[0].email)}" style="all: initial !important; font-family: inherit !important; font-size: 14px !important; color: #94a3b8 !important; height: 20px !important; line-height: 20px !important; letter-spacing: normal !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; flex-shrink: 1 !important; cursor: default !important;">
-                ${escapeHtml(fromEmailOnly)}
-              </span>` : ''}
-              <span style="all: initial !important; font-family: inherit !important; font-size: 14px !important; color: #1e293b !important; height: 20px !important; line-height: 20px !important; letter-spacing: normal !important; white-space: nowrap !important; flex-shrink: 0 !important;">
-                ${escapeHtml(date)}
-              </span>
-            </div>
-            <div style="all: initial !important; display: flex !important; box-sizing: border-box !important; font-family: inherit !important; margin: 0 !important; padding: 0 !important; gap: 6px !important;">
-              <span style="all: initial !important; font-family: inherit !important; font-size: 13px !important; color: #64748b !important; height: 20px !important; line-height: 20px !important; white-space: nowrap !important;">
-                to ${escapeHtml(toNameOnly)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const trackerFixStyle = `<style>img[width="1"][height="1"], img[width="0"][height="0"] { display: none !important; position: absolute !important; }</style>`;
-
-    const bodyTagMatch = bodyHtml.match(/<body[^>]*>/i);
-    if (bodyTagMatch) {
-      return bodyHtml.replace(bodyTagMatch[0], bodyTagMatch[0] + trackerFixStyle + headerHtml);
-    } else {
-      return trackerFixStyle + headerHtml + bodyHtml;
-    }
   }
 </script>
 
@@ -228,7 +95,7 @@
     style="background: linear-gradient(290deg, #49578d 5%, #7934a3 95%); color: #ffffff;"
   >
     <div class="flex items-center gap-2">
-      <h1 style="font-family: 'Proxima Nova', system-ui, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', -apple-system, Arial, sans-serif; font-size: 15.75px; font-weight: 700;">
+      <h1 class="text-[15.75px] font-bold font-sans">
         Checker for Fastmail
       </h1>
     </div>
@@ -301,7 +168,7 @@
           </p>
           <button
             onclick={openOptions}
-            class="px-5 py-2 bg-[#8b45f3] text-white rounded hover:bg-[#7837d9] transition-colors text-sm font-medium shadow-sm"
+            class="px-5 py-2 bg-[#8b45f3] text-white rounded hover:bg-[#7837d9] transition-colors text-sm font-medium shadow-sm cursor-pointer"
           >
             Connect
           </button>
@@ -337,43 +204,39 @@
                 ? 'bg-[#f4f0fa]'
                 : 'hover:bg-slate-50 bg-white'}"
             >
-              <a
-                href="#"
-                onclick={(e) => selectEmail(email, e)}
-                class="flex p-3 pr-4 gap-3 items-start outline-none"
+              <button
+                type="button"
+                onclick={() => selectEmail(email)}
+                class="w-full text-left flex p-3 pr-4 gap-3 items-start outline-none cursor-pointer bg-transparent border-none"
               >
                 <!-- Content -->
-                <div class="flex-1 min-w-0" style="font-family: 'Proxima Nova', system-ui, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', -apple-system, Arial, sans-serif;">
+                <div class="flex-1 min-w-0 font-sans">
                   <div class="flex justify-between items-baseline mb-[1px]">
                     <span
-                      class="text-slate-900 truncate pr-2"
-                      style="font-size: 14px; line-height: 20px;"
+                      class="text-slate-900 truncate pr-2 text-[14px] leading-[20px]"
                     >
                       {email.from?.[0]?.name ||
                         email.from?.[0]?.email ||
                         "Unknown"}
                     </span>
                     <span
-                      class="text-slate-500 shrink-0"
-                      style="font-size: 12.4444px;"
+                      class="text-slate-500 shrink-0 text-[12px]"
                     >
                       {formatTime(email.receivedAt)}
                     </span>
                   </div>
                   <div
-                    class="text-slate-800 truncate mb-[2px]"
-                    style="font-size: 14px; font-weight: 600; line-height: 20px;"
+                    class="text-slate-800 truncate mb-[2px] text-[14px] font-semibold leading-[20px]"
                   >
                     {email.subject || "(No Subject)"}
                   </div>
                   <div 
-                    class="text-slate-500 truncate"
-                    style="font-size: 12.4444px; font-weight: 400; line-height: 17px;"
+                    class="text-slate-500 truncate text-[12px] font-normal leading-[17px]"
                   >
                     {email.preview || "..."}
                   </div>
                 </div>
-              </a>
+              </button>
             </li>
           {/each}
         </ul>
@@ -391,12 +254,12 @@
               <div class="h-4 bg-slate-100 rounded w-5/6"></div>
               <div class="h-4 bg-slate-100 rounded w-1/2"></div>
             </div>
-          {:else if emailBody}
+          {:else if emailBody !== null}
             <iframe
-              srcdoc={buildIframeContent(selectedEmail, emailBody)}
+              srcdoc={buildIframeContent(selectedEmail, emailBody, isPlainText)}
               class="w-full h-full border-none"
               title="Email Preview"
-              sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+              sandbox="allow-popups allow-popups-to-escape-sandbox"
             ></iframe>
           {:else}
             <div class="p-6 text-slate-500 italic mt-4">
@@ -432,7 +295,6 @@
 </main>
 
 <style>
-  /* Custom scrollbar for a cleaner look */
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
   }

@@ -4,7 +4,6 @@
   "description": "Check your Fastmail unread messages quickly.",
   "version": "1.0.0",
   "permissions": [
-    "identity",
     "storage",
     "alarms"
   ],

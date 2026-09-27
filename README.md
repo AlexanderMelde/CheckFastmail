@@ -1,56 +1,55 @@
 # Checker for Fastmail
 
-A lightning-fast, lightweight Chrome Extension for Fastmail power users. This extension allows you to check your unread Fastmail emails directly from your browser toolbar, featuring a two-pane layout to preview your emails without opening a new tab.
+A lightning-fast, lightweight Chrome Extension for Fastmail users. Check and preview unread Fastmail emails directly from your browser toolbar via a secure two-pane layout without opening a new tab.
 
-Built with **Svelte**, **Vite**, and **Tailwind CSS**, utilizing Manifest V3 (MV3). It uses Fastmail's modern **JMAP API** for blazing-fast synchronization and securely stores a Fastmail API Token locally for authentication.
+Built with **Svelte 5**, **Vite**, and **TypeScript**, running on Chrome Manifest V3 (MV3). It uses Fastmail's standard **JMAP API** (RFC 8620 / RFC 8621) and securely stores a Fastmail API Token locally in the browser.
 
 ## Features
 
-- **Two-Pane Layout:** View your unread inbox on the left, and securely preview full email content on the right (rendered in a sandboxed iframe).
-- **Quick Actions:** Instantly mark emails as read or archive them right from the extension. UI updates immediately (optimistic rendering) while JMAP syncs in the background.
-- **Smart Polling:** A background Service Worker seamlessly polls Fastmail every 5 minutes to keep your extension badge updated.
-- **Privacy First:** 0% external data collection. Everything stays strictly between your browser and Fastmail.
+- **Two-Pane Layout:** View unread emails in a sidebar and preview full email content in a sandboxed viewport.
+- **Unified Scrolling:** Email headers and bodies scroll naturally together inside the sandboxed view.
+- **Hardened Security:** Email bodies run with strict sandboxing (`sandbox="allow-popups allow-popups-to-escape-sandbox"`), with `allow-scripts` and `allow-same-origin` omitted. A strict Content Security Policy (`default-src 'none'; img-src https: data:; style-src 'unsafe-inline';`) prevents malicious script execution.
+- **Smart Background Polling:** A background Service Worker polls Fastmail every 5 minutes to keep the toolbar unread badge updated.
+- **Privacy First:** 0% external data collection. Direct communication strictly between your browser and Fastmail (`api.fastmail.com`).
 
 ## Project Structure
 
-- `src/background/`: Contains the Service Worker which runs in the background. It handles JMAP API requests, token validation, and background polling via `chrome.alarms`.
-- `src/popup/`: The Svelte app that renders when you click the extension icon. Contains the two-pane interface for reading and managing unread emails.
-- `src/options/`: The Svelte app for the settings page, where you securely save your Fastmail API token.
-- `src/styles/`: Global Tailwind CSS configurations mimicking Fastmail's clean aesthetic.
+- `src/background/`: Service Worker handling JMAP queries, token validation, and background alarm polling.
+- `src/popup/`: Svelte 5 application rendering the toolbar popup interface.
+- `src/options/`: Svelte 5 application for managing the Fastmail API token connection.
+- `src/types.ts`: Central TypeScript definitions and messaging contracts.
+- `src/styles/`: Global styles.
 
-## Local Development Setup
+## Local Development & Testing
 
 1. Install dependencies:
    ```bash
    npm install
    ```
-2. Start the Vite development server (with Hot Module Reloading for extensions via `@crxjs/vite-plugin`):
+
+2. Run automated tests:
+   ```bash
+   npm test
+   ```
+
+3. Type check:
+   ```bash
+   npm run check
+   ```
+
+4. Start Vite development server (with HMR via `@crxjs/vite-plugin`):
    ```bash
    npm run dev
    ```
-3. Open Chrome and navigate to `chrome://extensions/`.
-4. Enable **Developer mode** in the top right corner.
-5. Click **Load unpacked** and select the `dist/` directory in this project.
 
-## Authentication Note
+5. Load in Chrome:
+   - Navigate to `chrome://extensions/`.
+   - Enable **Developer mode** (top right).
+   - Click **Load unpacked** and select the `dist/` directory.
 
-Per Fastmail's developer guidance, the extension currently authenticates using a standard **Personal API Token** (generated from Fastmail's Security Settings). OAuth 2.0 implementation is deferred until the extension is ready for mass distribution in the Chrome Web Store, at which point Fastmail will whitelist a formal OAuth Client ID.
+## Production Build
 
-## How to Bundle for Production
-
-When you are ready to bundle the extension for the Chrome Web Store:
-
-1. Run the build command:
-   ```bash
-   npm run build
-   ```
-2. This will compile and minify all Svelte, TypeScript, and CSS assets and output them to the `dist/` folder.
-3. Zip the contents of the `dist/` folder.
-4. Upload the resulting `.zip` file to the Chrome Developer Dashboard.
-
-## What's Left to Do
-
-The MVP features (UI, Quick Actions, Authentication, Assets, Privacy Policy) have been successfully completed. 
-
-- [ ] **Agenda Tab**: The initial specification included an Agenda view for upcoming calendar events. This has been deferred until Fastmail finalizes their JMAP calendar specification. Once standard `urn:ietf:params:jmap:calendars` access is opened, this feature can be safely built out.
-- [ ] **OAuth Migration**: Once ready for a larger user base, swap the API Token UI back to a formal PKCE OAuth flow (requires Fastmail Support to whitelist the Extension ID).
+```bash
+npm run build
+```
+Minifies and bundles all assets into `dist/`. Zip the `dist/` directory contents for Chrome Web Store submission.

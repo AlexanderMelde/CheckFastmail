@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import type { SaveTokenResponse } from '../types';
   
   let isConnected = $state(false);
   let apiToken = $state('');
@@ -15,7 +16,7 @@
     isSaving = true;
     errorMsg = '';
     
-    chrome.runtime.sendMessage({ type: 'TEST_AND_SAVE_TOKEN', token: apiToken.trim() }, (response) => {
+    chrome.runtime.sendMessage({ type: 'TEST_AND_SAVE_TOKEN', token: apiToken.trim() }, (response: SaveTokenResponse) => {
       isSaving = false;
       if (response && response.success) {
         isConnected = true;
@@ -27,7 +28,7 @@
   }
 
   function handleDisconnect() {
-    chrome.storage.local.remove(['access_token', 'account_id', 'api_url'], () => {
+    chrome.storage.local.remove(['access_token', 'account_id', 'api_url', 'inbox_id'], () => {
       isConnected = false;
     });
   }
@@ -56,10 +57,10 @@
     <div class="bg-blue-50 text-blue-800 p-4 rounded-lg mb-6 text-sm">
       <p class="mb-2 font-medium">To connect your account:</p>
       <ol class="list-decimal list-inside space-y-1">
-        <li>Go to your Fastmail settings: <a href="https://www.fastmail.com/settings/security/tokens" target="_blank" class="text-blue-600 underline">Settings &gt; Security &gt; API Tokens</a></li>
+        <li>Go to your Fastmail settings: <a href="https://www.fastmail.com/settings/security/tokens" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">Settings &gt; Security &gt; API Tokens</a></li>
         <li>Click <strong>New API Token</strong></li>
-        <li>Give it a name (e.g. "Extension") and ensure the <strong>JMAP</strong> protocol is selected.</li>
-        <li>Make sure to grant <strong>Read-only</strong> permissions for Mail.</li>
+        <li>Give it a name (e.g. "Checker Extension") and ensure the <strong>JMAP</strong> protocol is selected.</li>
+        <li>Select <strong>Read-only</strong> permissions for Mail.</li>
         <li>Copy the token and paste it below.</li>
       </ol>
     </div>
@@ -79,14 +80,14 @@
       <button 
         onclick={handleSave} 
         disabled={isSaving}
-        class="self-start px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+        class="self-start px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 cursor-pointer"
       >
         {isSaving ? 'Connecting...' : 'Save & Connect'}
       </button>
     </div>
   {:else}
     <div class="flex space-x-4 mb-6">
-      <button onclick={handleDisconnect} class="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium">
+      <button onclick={handleDisconnect} class="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium cursor-pointer">
         Disconnect
       </button>
     </div>

@@ -1,12 +1,12 @@
-import { getUnreadEmails, markEmailRead, archiveEmail, fetchSession, fetchEmailBody } from './jmap';
+import { getUnreadEmails, fetchSession, fetchEmailBody, clearSession } from './jmap';
+import type { MessageRequest } from '../types';
 
 const ALARM_NAME = 'POLL_FASTMAIL';
 
 // Listen for messages from the UI
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResponse) => {
   if (message.type === 'TEST_AND_SAVE_TOKEN') {
     const token = message.token;
-    // Temporarily save token to test
     chrome.storage.local.set({ access_token: token }, () => {
       fetchSession(true).then((session) => {
         if (session) {
@@ -14,8 +14,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           setupAlarm();
           sendResponse({ success: true });
         } else {
-          // Revert / remove if invalid
-          chrome.storage.local.remove(['access_token', 'api_url', 'account_id'], () => {
+          clearSession().then(() => {
             sendResponse({ success: false });
           });
         }
@@ -23,36 +22,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true; // Indicates async response
   }
-  
+
   if (message.type === 'FETCH_UNREAD') {
-    getUnreadEmails().then(result => {
+    getUnreadEmails().then((result) => {
       sendResponse(result);
-      if (result.emails) {
+      if (result.notAuthenticated) {
+        updateBadgeCount(0);
+      } else if (result.emails) {
         updateBadgeCount(result.emails.length);
       }
     });
     return true;
   }
 
-  if (message.type === 'MARK_READ') {
-    markEmailRead(message.emailId).then(success => {
-      if (success) updateBadge(); // Update badge count after marking read
-      sendResponse({ success });
-    });
-    return true;
-  }
-
-  if (message.type === 'ARCHIVE') {
-    archiveEmail(message.emailId).then(success => {
-      if (success) updateBadge();
-      sendResponse({ success });
-    });
-    return true;
-  }
-
   if (message.type === 'FETCH_EMAIL_BODY') {
-    fetchEmailBody(message.emailId).then(body => {
-      sendResponse({ body });
+    fetchEmailBody(message.emailId).then((result) => {
+      sendResponse(result);
     });
     return true;
   }
@@ -69,12 +54,13 @@ async function updateBadgeCount(count: number) {
 
 async function updateBadge() {
   const result = await getUnreadEmails();
-  if (result.emails) {
+  if (result.notAuthenticated) {
+    await updateBadgeCount(0);
+  } else if (result.emails) {
     await updateBadgeCount(result.emails.length);
   }
 }
 
-// Polling setup
 function setupAlarm() {
   chrome.alarms.create(ALARM_NAME, { periodInMinutes: 5 });
 }
