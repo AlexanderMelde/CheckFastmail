@@ -3,8 +3,8 @@ import type { MessageRequest, FetchUnreadResponse } from '../types';
 import { STORAGE_KEYS } from '../types';
 
 export const ALARM_NAME = 'POLL_FASTMAIL';
-export const POLL_INTERVAL_MINUTES = 5;
-export const BADGE_COLOR = '#2563eb'; // Fastmail Blue
+export const POLL_INTERVAL_MINUTES = 1;
+export const BADGE_COLOR = '#4b1e8b';
 export const CONTEXT_MENU_OPEN_FASTMAIL = 'OPEN_FASTMAIL';
 export const FASTMAIL_WEB_URL = 'https://app.fastmail.com/mail/';
 
