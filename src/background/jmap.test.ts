@@ -79,6 +79,42 @@ describe('extractBodyFromEmail', () => {
     expect(extractBodyFromEmail({})).toBeNull();
     expect(extractBodyFromEmail({ htmlBody: [] })).toBeNull();
   });
+
+  it('concatenates multiple HTML body parts in order per RFC 8621 §4.1.4', () => {
+    const email = {
+      htmlBody: [
+        { partId: 'part-1' },
+        { partId: 'part-2' }
+      ],
+      bodyValues: {
+        'part-1': { value: '<p>Part 1</p>' },
+        'part-2': { value: '<p>Part 2</p>' }
+      }
+    };
+    const result = extractBodyFromEmail(email);
+    expect(result).toEqual({
+      content: '<p>Part 1</p><p>Part 2</p>',
+      isPlainText: false
+    });
+  });
+
+  it('concatenates multiple plain text body parts in order per RFC 8621 §4.1.4', () => {
+    const email = {
+      textBody: [
+        { partId: 'text-1' },
+        { partId: 'text-2' }
+      ],
+      bodyValues: {
+        'text-1': { value: 'Line 1\n' },
+        'text-2': { value: 'Line 2' }
+      }
+    };
+    const result = extractBodyFromEmail(email);
+    expect(result).toEqual({
+      content: 'Line 1\nLine 2',
+      isPlainText: true
+    });
+  });
 });
 
 describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
@@ -225,6 +261,42 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
 
       const session = await fetchSession(true);
       expect(session).toBeNull();
+    });
+
+    it('sends Accept: application/json header per RFC 8620 §2', async () => {
+      mockStorage = { access_token: 'tok-123' };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          apiUrl: 'https://api.fastmail.com/jmap/api',
+          primaryAccounts: { 'urn:ietf:params:jmap:mail': 'acc-1' }
+        })
+      } as Response);
+
+      await fetchSession(true);
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://api.fastmail.com/jmap/session',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer tok-123',
+            Accept: 'application/json'
+          })
+        })
+      );
+    });
+
+    it('supports tokenOverride for in-memory validation without mutating storage on failure', async () => {
+      mockStorage = { access_token: 'existing-valid-token' };
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: false,
+        status: 401
+      } as Response);
+
+      const result = await fetchSession(true, 'tentative-bad-token');
+      expect(result).toBeNull();
+      expect(mockStorage.access_token).toBe('existing-valid-token');
     });
   });
 
@@ -435,6 +507,34 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       const result = await getUnreadEmails();
       expect(result.emails).toEqual([]);
       expect(result.error).toContain('Failed to fetch');
+    });
+
+    it('sends Accept: application/json in JMAP API POST requests per RFC 8620 §3.3', async () => {
+      mockStorage = {
+        access_token: 'tok-123',
+        api_url: 'https://api.fastmail.com/jmap/api',
+        account_id: 'acc-1',
+        inbox_id: 'inbox-1'
+      };
+
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ methodResponses: [['Email/get', { list: [] }, 'g']] })
+      } as Response);
+
+      await getUnreadEmails();
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://api.fastmail.com/jmap/api',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer tok-123',
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          })
+        })
+      );
     });
   });
 

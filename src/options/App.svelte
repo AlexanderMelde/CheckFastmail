@@ -18,6 +18,10 @@
     
     chrome.runtime.sendMessage({ type: 'TEST_AND_SAVE_TOKEN', token: apiToken.trim() }, (response: SaveTokenResponse) => {
       isSaving = false;
+      if (chrome.runtime.lastError) {
+        errorMsg = 'Error communicating with background worker. Please reload the extension.';
+        return;
+      }
       if (response && response.success) {
         isConnected = true;
         apiToken = '';

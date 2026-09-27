@@ -5,6 +5,7 @@
 
   let unreadEmails = $state<EmailItem[]>([]);
   let isLoading = $state(true);
+  let hasInitialized = $state(false);
   let errorMsg = $state("");
   let notAuthenticated = $state(false);
 
@@ -29,6 +30,7 @@
     };
 
     chrome.runtime.sendMessage({ type: "FETCH_UNREAD" }, (response: FetchUnreadResponse) => {
+      hasInitialized = true;
       if (chrome.runtime.lastError) {
         errorMsg = "Error communicating with background script.";
         finishLoading();
@@ -76,6 +78,15 @@
     chrome.runtime.sendMessage(
       { type: "FETCH_EMAIL_BODY", emailId: email.id },
       (response: FetchEmailBodyResponse) => {
+        if (chrome.runtime.lastError) {
+          if (selectedEmail && selectedEmail.id === email.id) {
+            isLoadingBody = false;
+            emailBody = "Error communicating with background script.";
+            isPlainText = true;
+          }
+          return;
+        }
+
         if (selectedEmail && selectedEmail.id === email.id) {
           isLoadingBody = false;
           if (response && response.body !== null) {
@@ -146,7 +157,7 @@
         </div>
       {/if}
 
-      {#if isLoading && unreadEmails.length === 0}
+      {#if !hasInitialized && isLoading}
         <div class="p-4 animate-pulse space-y-5">
           {#each Array(5) as _}
             <div class="flex gap-3">

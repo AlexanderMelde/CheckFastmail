@@ -11,26 +11,31 @@ export async function clearSession(): Promise<void> {
   await chrome.storage.local.remove(['access_token', 'api_url', 'account_id', 'inbox_id']);
 }
 
-export async function fetchSession(forceRefresh = false): Promise<JmapSession | null> {
-  if (!forceRefresh) {
+export async function fetchSession(forceRefresh = false, tokenOverride?: string): Promise<JmapSession | null> {
+  const isTestingToken = Boolean(tokenOverride);
+
+  if (!forceRefresh && !isTestingToken) {
     const result = (await chrome.storage.local.get(['api_url', 'account_id'])) || {};
     if (result.api_url && result.account_id) {
       return { apiUrl: result.api_url as string, accountId: result.account_id as string };
     }
   }
 
-  const token = await getAccessToken();
+  const token = tokenOverride || (await getAccessToken());
   if (!token) return null;
 
   try {
     const response = await fetch(SESSION_URL, {
       headers: {
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json'
       }
     });
 
     if (response.status === 401) {
-      await clearSession();
+      if (!isTestingToken) {
+        await clearSession();
+      }
       return null;
     }
 
@@ -57,10 +62,12 @@ export async function fetchSession(forceRefresh = false): Promise<JmapSession | 
       return null;
     }
 
-    await chrome.storage.local.set({
-      api_url: apiUrl,
-      account_id: accountId
-    });
+    if (!isTestingToken) {
+      await chrome.storage.local.set({
+        api_url: apiUrl,
+        account_id: accountId
+      });
+    }
 
     return { apiUrl, accountId };
   } catch {
@@ -77,7 +84,8 @@ export async function getInboxId(session: JmapSession, token: string): Promise<s
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
       },
       body: JSON.stringify({
         using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:mail'],
@@ -133,7 +141,8 @@ export async function getUnreadEmails(): Promise<FetchUnreadResponse> {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
       },
       body: JSON.stringify({
         using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:mail'],
@@ -203,21 +212,23 @@ export async function getUnreadEmails(): Promise<FetchUnreadResponse> {
 export function extractBodyFromEmail(email: any): { content: string; isPlainText: boolean } | null {
   if (!email || !email.bodyValues) return null;
 
-  // Try HTML body parts first
-  if (Array.isArray(email.htmlBody)) {
-    for (const part of email.htmlBody) {
-      if (part?.partId && email.bodyValues[part.partId]?.value) {
-        return { content: email.bodyValues[part.partId].value, isPlainText: false };
-      }
+  // RFC 8621 §4.1.4: Concatenate body parts in order to reconstruct the message content
+  if (Array.isArray(email.htmlBody) && email.htmlBody.length > 0) {
+    const parts = email.htmlBody
+      .map((part: any) => (part?.partId ? email.bodyValues[part.partId]?.value : ''))
+      .filter((v: any) => typeof v === 'string' && v.length > 0);
+    if (parts.length > 0) {
+      return { content: parts.join(''), isPlainText: false };
     }
   }
 
   // Fallback to plain text body parts
-  if (Array.isArray(email.textBody)) {
-    for (const part of email.textBody) {
-      if (part?.partId && email.bodyValues[part.partId]?.value) {
-        return { content: email.bodyValues[part.partId].value, isPlainText: true };
-      }
+  if (Array.isArray(email.textBody) && email.textBody.length > 0) {
+    const parts = email.textBody
+      .map((part: any) => (part?.partId ? email.bodyValues[part.partId]?.value : ''))
+      .filter((v: any) => typeof v === 'string' && v.length > 0);
+    if (parts.length > 0) {
+      return { content: parts.join(''), isPlainText: true };
     }
   }
 
@@ -235,7 +246,8 @@ export async function fetchEmailBody(emailId: string): Promise<FetchEmailBodyRes
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
       },
       body: JSON.stringify({
         using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:mail'],

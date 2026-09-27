@@ -17,7 +17,12 @@
   },
   "action": {
     "default_popup": "src/popup/index.html",
-    "default_title": "Checker for Fastmail"
+    "default_title": "Checker for Fastmail",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
   },
   "options_ui": {
     "page": "src/options/index.html",

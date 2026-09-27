@@ -51,6 +51,7 @@ When writing or changing code, **stop at the first rung that holds**:
 
 ### B. Secret & Token Management
 - **Local Storage Only:** Fastmail API tokens must be saved exclusively in `chrome.storage.local`. Never use `chrome.storage.sync` (which transmits credentials across Google accounts).
+- **Verify Before Storing:** Candidate tokens are verified in-memory against Fastmail's JMAP session endpoint first. Tokens and session endpoints (`api_url`, `account_id`) are only written to `chrome.storage.local` once authenticated, avoiding false background alarm and badge triggers.
 - **Zero Third-Party Transmission:** Tokens and email data are transmitted solely to `https://api.fastmail.com/`. Zero telemetry, zero analytics, zero external logging.
 - **Immediate Invalidation:** Any `401 Unauthorized` response immediately invokes `clearSession()`, removing tokens and cached endpoints from storage and resetting extension badges.
 
@@ -69,6 +70,8 @@ When writing or changing code, **stop at the first rung that holds**:
 - **Metadata Escaping:** All dynamic values (subject, sender names, emails, dates) must be passed through `escapeHtml()` before insertion into HTML structures.
 
 ### D. JMAP Protocol Compliance (RFC 8620 / RFC 8621)
+- **Header Compliance:** All JMAP requests (session discovery and API POSTs) strictly include `Accept: application/json` per RFC 8620 §2 and §3.3.
+- **Multi-Part Body Concatenation:** Concatenate `htmlBody` and `textBody` parts in sequence per RFC 8621 §4.1.4 rather than truncating after the first part.
 - **Single-Flight Requests:** Group related operations using RFC 8620 §3.7 back-references (`#ids`) to fetch unread IDs and message details in a single HTTP POST round-trip.
 - **Explicit Error Boundaries:** Never swallow fetch errors into empty arrays. Differentiate:
   - `notAuthenticated` (HTTP 401)
@@ -76,6 +79,7 @@ When writing or changing code, **stop at the first rung that holds**:
   - `error: 'JMAP error: ...'` (Method-level protocol errors)
   - `error: 'Network error'` (Offline / connectivity dropouts)
   - True Inbox Zero (empty successful response)
+- **Badge Preservation:** Unread toolbar badges are never wiped or reset on transient network or 5xx server dropouts, ensuring accurate user state during connectivity interruptions.
 
 ---
 
