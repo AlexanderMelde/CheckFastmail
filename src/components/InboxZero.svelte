@@ -45,7 +45,7 @@
     </svg>
   </div>
   <h2 class="text-base font-semibold text-slate-800 mb-1">
-    Inbox Zero
+    Your Inbox is empty!
   </h2>
   <p class="text-sm text-slate-500 max-w-[240px]">
     You're all caught up! No unread messages in your inbox.

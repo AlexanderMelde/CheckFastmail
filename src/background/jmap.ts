@@ -54,7 +54,7 @@ export async function fetchSession(forceRefresh = false, tokenOverride?: string)
 
     const data = await response.json();
     let accountId = data.primaryAccounts?.['urn:ietf:params:jmap:mail'];
-    
+
     // Fallback: search accounts map for mail capability if primaryAccounts is unset
     if (!accountId && data.accounts) {
       for (const [id, acc] of Object.entries(data.accounts as Record<string, { accountCapabilities?: Record<string, unknown> }>)) {
@@ -153,87 +153,101 @@ export async function getUnreadEmails(): Promise<FetchUnreadResponse> {
       return { emails: [], notAuthenticated: true };
     }
 
-  try {
-    const inboxId = await getInboxId(session, token);
-    const filter: Record<string, string> = { notKeyword: '$seen' };
-    if (inboxId) {
-      filter.inMailbox = inboxId;
-    }
-
-    // RFC 8620 §3.7: Single HTTP round-trip combining Email/query and Email/get via back-reference
-    const response = await fetch(session.apiUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-      },
-      body: JSON.stringify({
-        using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:mail'],
-        methodCalls: [
-          [
-            'Email/query',
-            {
-              accountId: session.accountId,
-              filter,
-              sort: [{ property: 'receivedAt', isAscending: false }],
-              limit: UNREAD_EMAILS_LIMIT
-            },
-            'q'
-          ],
-          [
-            'Email/get',
-            {
-              accountId: session.accountId,
-              '#ids': {
-                resultOf: 'q',
-                name: 'Email/query',
-                path: '/ids'
-              },
-              properties: ['id', 'threadId', 'subject', 'from', 'to', 'receivedAt', 'preview']
-            },
-            'g'
-          ]
-        ]
-      }),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-    });
-
-    if (response.status === HTTP_STATUS_UNAUTHORIZED) {
-      await clearSession();
-      return { emails: [], notAuthenticated: true };
-    }
-
-    if (!response.ok) {
-      return { emails: [], error: `Server error (${response.status})` };
-    }
-
-    const data = await response.json();
-    const methodResponses = data.methodResponses || [];
-
-    // Check for method-level errors
-    for (const [name, resp] of methodResponses) {
-      if (name === 'error') {
-        const errInfo = resp as { type?: string; description?: string } | undefined;
-        const errorType = errInfo?.type || 'unknown';
-        const descStr = errInfo?.description ? `: ${errInfo.description}` : '';
-        return { emails: [], error: `JMAP error: ${errorType}${descStr}` };
+    try {
+      const inboxId = await getInboxId(session, token);
+      const filter: Record<string, string> = { notKeyword: '$seen' };
+      if (inboxId) {
+        filter.inMailbox = inboxId;
       }
-    }
 
-    // Find Email/get response ('g')
-    const getResponse = methodResponses.find(
-      ([name, _resp, id]: [string, unknown, string]) => name === 'Email/get' && id === 'g'
-    );
-    if (getResponse && (getResponse[1] as { list?: EmailItem[] })?.list) {
-      return { emails: (getResponse[1] as { list: EmailItem[] }).list };
-    }
+      // RFC 8620 §3.7: Single HTTP round-trip combining Email/query and Email/get via back-reference
+      const response = await fetch(session.apiUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({
+          using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:mail'],
+          methodCalls: [
+            [
+              'Email/query',
+              {
+                accountId: session.accountId,
+                filter,
+                sort: [{ property: 'receivedAt', isAscending: false }],
+                limit: UNREAD_EMAILS_LIMIT,
+                calculateTotal: true
+              },
+              'q'
+            ],
+            [
+              'Email/get',
+              {
+                accountId: session.accountId,
+                '#ids': {
+                  resultOf: 'q',
+                  name: 'Email/query',
+                  path: '/ids'
+                },
+                properties: ['id', 'threadId', 'subject', 'from', 'to', 'receivedAt', 'preview']
+              },
+              'g'
+            ]
+          ]
+        }),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+      });
 
-    return { emails: [] };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Network error';
-    return { emails: [], error: `Network error: ${message}` };
-  }
+      if (response.status === HTTP_STATUS_UNAUTHORIZED) {
+        await clearSession();
+        return { emails: [], notAuthenticated: true };
+      }
+
+      if (!response.ok) {
+        return { emails: [], error: `Server error (${response.status})` };
+      }
+
+      const data = await response.json();
+      const methodResponses = data.methodResponses || [];
+
+      // Check for method-level errors
+      for (const [name, resp] of methodResponses) {
+        if (name === 'error') {
+          const errInfo = resp as { type?: string; description?: string } | undefined;
+          const errorType = errInfo?.type || 'unknown';
+          const descStr = errInfo?.description ? `: ${errInfo.description}` : '';
+          return { emails: [], error: `JMAP error: ${errorType}${descStr}` };
+        }
+      }
+
+      // Extract total from Email/query response ('q') per RFC 8620 §5.5
+      const queryResponse = methodResponses.find(
+        ([name, _resp, id]: [string, unknown, string]) => name === 'Email/query' && id === 'q'
+      );
+      const totalCount = (queryResponse?.[1] as { total?: number })?.total;
+
+      // Find Email/get response ('g')
+      const getResponse = methodResponses.find(
+        ([name, _resp, id]: [string, unknown, string]) => name === 'Email/get' && id === 'g'
+      );
+      if (getResponse && (getResponse[1] as { list?: EmailItem[] })?.list) {
+        const emails = (getResponse[1] as { list: EmailItem[] }).list;
+        return {
+          emails,
+          totalCount: typeof totalCount === 'number' ? totalCount : emails.length
+        };
+      }
+
+      return {
+        emails: [],
+        totalCount: typeof totalCount === 'number' ? totalCount : 0
+      };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Network error';
+      return { emails: [], error: `Network error: ${message}` };
+    }
   })().finally(() => {
     inFlightGetUnreadEmails = null;
   });

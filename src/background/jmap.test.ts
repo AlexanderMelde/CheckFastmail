@@ -433,6 +433,7 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       const [queryCall, getCall] = sentPayload.methodCalls;
       expect(queryCall[0]).toBe('Email/query');
       expect(queryCall[1].filter).toEqual({ notKeyword: '$seen', inMailbox: 'inbox-id' });
+      expect(queryCall[1].calculateTotal).toBe(true);
       expect(queryCall[2]).toBe('q');
 
       expect(getCall[0]).toBe('Email/get');
@@ -447,6 +448,30 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       expect(result.emails).toHaveLength(2);
       expect(result.emails[0].subject).toBe('First Unread');
       expect(result.emails[1].subject).toBe('Second Unread');
+    });
+
+    it('returns totalCount from Email/query response when calculateTotal is returned', async () => {
+      mockStorage = {
+        access_token: 'valid-token',
+        api_url: 'https://api.fastmail.com/jmap/api/',
+        account_id: 'acc-mail',
+        inbox_id: 'inbox-id'
+      };
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          methodResponses: [
+            ['Email/query', { ids: ['msg-1'], total: 452 }, 'q'],
+            ['Email/get', { list: [{ id: 'msg-1', subject: 'Latest' }] }, 'g']
+          ]
+        })
+      } as Response);
+
+      const result = await getUnreadEmails();
+      expect(result.emails).toHaveLength(1);
+      expect(result.totalCount).toBe(452);
     });
 
     it('returns empty emails array when query returns 0 matches (true Inbox Zero)', async () => {

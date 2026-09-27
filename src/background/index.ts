@@ -76,7 +76,8 @@ chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResp
         if (result.notAuthenticated) {
           updateBadgeCount(0);
         } else if (!result.error && result.emails) {
-          updateBadgeCount(result.emails.length);
+          const count = typeof result.totalCount === 'number' ? result.totalCount : result.emails.length;
+          updateBadgeCount(count);
         }
       })
       .catch((err) => {
@@ -129,7 +130,8 @@ export async function updateBadge(): Promise<void> {
       if (result.notAuthenticated) {
         await updateBadgeCount(0);
       } else if (!result.error && result.emails) {
-        await updateBadgeCount(result.emails.length);
+        const count = typeof result.totalCount === 'number' ? result.totalCount : result.emails.length;
+        await updateBadgeCount(count);
       }
     } finally {
       inFlightUpdateBadge = null;

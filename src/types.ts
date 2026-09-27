@@ -29,6 +29,7 @@ export interface SaveTokenResponse {
 
 export interface FetchUnreadResponse {
   emails: EmailItem[];
+  totalCount?: number;
   notAuthenticated?: boolean;
   error?: string;
 }

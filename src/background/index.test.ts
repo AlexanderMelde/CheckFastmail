@@ -148,6 +148,18 @@ describe('Background Worker Lifecycle & Badge Management', () => {
       expect(mockAction.setBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#2563eb' });
     });
 
+    it('updates badge to totalCount when totalCount exceeds returned email items', async () => {
+      mockJmap.getUnreadEmails.mockResolvedValueOnce({
+        emails: [{ id: '1', receivedAt: '2026-09-20T00:00:00Z' }],
+        totalCount: 452
+      });
+
+      await updateBadge();
+
+      expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '452' });
+      expect(mockAction.setBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#2563eb' });
+    });
+
     it('deduplicates concurrent updateBadge calls so only one getUnreadEmails runs', async () => {
       let resolveFetch!: (val: any) => void;
       const fetchPromise = new Promise<FetchUnreadResponse>((res) => {
