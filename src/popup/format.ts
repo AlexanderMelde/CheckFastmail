@@ -85,6 +85,7 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
       
       ::-webkit-scrollbar {
         width: 6px;
+        height: 6px;
       }
       ::-webkit-scrollbar-track {
         background: transparent;
