@@ -9,10 +9,20 @@ describe('formatTime', () => {
     expect(result).toMatch(/\d{1,2}:\d{2}/);
   });
 
-  it('formats older date timestamp as month and day', () => {
-    const pastDate = new Date(2025, 0, 15, 10, 30);
-    const result = formatTime(pastDate.toISOString());
-    expect(result).toMatch(/Jan|15/);
+  it('formats older date timestamp as month and day when in current year', () => {
+    const thisYear = new Date().getFullYear();
+    const thisYearDate = new Date(thisYear, 0, 15, 10, 30);
+    const targetDate = new Date().getMonth() === 0 && new Date().getDate() === 15 ? new Date(thisYear, 1, 15) : thisYearDate;
+    const result = formatTime(targetDate.toISOString());
+    expect(result).toMatch(/Jan|Feb|15/);
+    expect(result).not.toContain(thisYear.toString());
+  });
+
+  it('formats dates from prior years with the year included', () => {
+    const priorYearDate = new Date(2020, 4, 12, 10, 30);
+    const result = formatTime(priorYearDate.toISOString());
+    expect(result).toContain('2020');
+    expect(result).toMatch(/May|12/);
   });
 
   it('handles invalid date strings gracefully', () => {
@@ -98,8 +108,37 @@ describe('buildIframeContent', () => {
     expect(result).toContain('<p>Content</p>');
   });
 
-  it('renders both name and email for recipients in header', () => {
-    const result = buildIframeContent(sampleEmail, '<p>Test</p>');
-    expect(result).toContain('to Bob Jones &lt;bob@example.com&gt;');
+  it('renders safe HTML when subject or sender contains special replace patterns like $&, $\', and $100', () => {
+    const specialEmail: EmailItem = {
+      id: 'msg-special',
+      subject: 'Special offer: $100 off & $& discount with $\' bonus!',
+      from: [{ name: 'Deals & $1 team', email: 'deals$@example.com' }],
+      receivedAt: '2026-09-20T14:30:00Z'
+    };
+
+    const fullHtml = '<!DOCTYPE html><html><body><p>Exclusive body content</p></body></html>';
+    const result = buildIframeContent(specialEmail, fullHtml);
+
+    // Verifies that $& is not interpreted as replacing matched substring with <body>
+    expect(result).not.toContain('&lt;body&gt;');
+    expect(result).toContain('Special offer: $100 off &amp; $&amp; discount with $&#39; bonus!');
+    expect(result).toContain('Deals &amp; $1 team');
+    // Verifies that $' did not duplicate the rest of the email body into the subject header
+    const occurrences = (result.match(/Exclusive body content/g) || []).length;
+    expect(occurrences).toBe(1);
+  });
+
+  it('injects CSP into head when head and body are both present', () => {
+    const fullHtml = '<!DOCTYPE html><html><head><title>Email</title></head><body><p>Content</p></body></html>';
+    const result = buildIframeContent(sampleEmail, fullHtml);
+
+    expect(result).toContain('<head><meta http-equiv="Content-Security-Policy"');
+    expect(result).toContain('<body>');
+    expect(result).toContain('Project Update');
+  });
+
+  it('handles non-string escapeHtml gracefully', () => {
+    expect(escapeHtml(123 as any)).toBe('');
+    expect(escapeHtml(null as any)).toBe('');
   });
 });

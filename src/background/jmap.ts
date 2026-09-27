@@ -4,7 +4,7 @@ const SESSION_URL = 'https://api.fastmail.com/jmap/session';
 
 async function getAccessToken(): Promise<string | null> {
   const result = (await chrome.storage.local.get(['access_token'])) || {};
-  return (result.access_token as string) || null;
+  return typeof result.access_token === 'string' ? result.access_token.trim() || null : null;
 }
 
 export async function clearSession(): Promise<void> {
@@ -12,6 +12,9 @@ export async function clearSession(): Promise<void> {
 }
 
 export async function fetchSession(forceRefresh = false, tokenOverride?: string): Promise<JmapSession | null> {
+  const token = tokenOverride || (await getAccessToken());
+  if (!token) return null;
+
   const isTestingToken = Boolean(tokenOverride);
 
   if (!forceRefresh && !isTestingToken) {
@@ -20,9 +23,6 @@ export async function fetchSession(forceRefresh = false, tokenOverride?: string)
       return { apiUrl: result.api_url as string, accountId: result.account_id as string };
     }
   }
-
-  const token = tokenOverride || (await getAccessToken());
-  if (!token) return null;
 
   try {
     const response = await fetch(SESSION_URL, {
@@ -211,12 +211,13 @@ export async function getUnreadEmails(): Promise<FetchUnreadResponse> {
 
 export function extractBodyFromEmail(email: EmailDetail | null | undefined): { content: string; isPlainText: boolean } | null {
   if (!email || !email.bodyValues) return null;
+  const bodyValues = email.bodyValues;
 
   // RFC 8621 §4.1.4: Concatenate body parts in order to reconstruct the message content
   if (Array.isArray(email.htmlBody) && email.htmlBody.length > 0) {
     const parts = email.htmlBody
-      .map((part) => (part?.partId ? email.bodyValues?.[part.partId]?.value : ''))
-      .filter((v): v is string => typeof v === 'string' && v.length > 0);
+      .map((part) => (part?.partId && part.partId in bodyValues ? bodyValues[part.partId]?.value : undefined))
+      .filter((v): v is string => typeof v === 'string');
     if (parts.length > 0) {
       return { content: parts.join(''), isPlainText: false };
     }
@@ -225,8 +226,8 @@ export function extractBodyFromEmail(email: EmailDetail | null | undefined): { c
   // Fallback to plain text body parts
   if (Array.isArray(email.textBody) && email.textBody.length > 0) {
     const parts = email.textBody
-      .map((part) => (part?.partId ? email.bodyValues?.[part.partId]?.value : ''))
-      .filter((v): v is string => typeof v === 'string' && v.length > 0);
+      .map((part) => (part?.partId && part.partId in bodyValues ? bodyValues[part.partId]?.value : undefined))
+      .filter((v): v is string => typeof v === 'string');
     if (parts.length > 0) {
       return { content: parts.join(''), isPlainText: true };
     }
@@ -236,10 +237,14 @@ export function extractBodyFromEmail(email: EmailDetail | null | undefined): { c
 }
 
 export async function fetchEmailBody(emailId: string): Promise<FetchEmailBodyResponse> {
-  const session = await fetchSession();
-  if (!session) return { body: null, error: 'Not authenticated' };
+  if (!emailId || typeof emailId !== 'string') {
+    return { body: null, error: 'Invalid email ID' };
+  }
+
   const token = await getAccessToken();
   if (!token) return { body: null, error: 'Not authenticated' };
+  const session = await fetchSession();
+  if (!session) return { body: null, error: 'Not authenticated' };
 
   try {
     const response = await fetch(session.apiUrl, {
@@ -257,9 +262,10 @@ export async function fetchEmailBody(emailId: string): Promise<FetchEmailBodyRes
             {
               accountId: session.accountId,
               ids: [emailId],
-              properties: ['bodyValues', 'htmlBody', 'textBody'],
+              properties: ['bodyValues', 'htmlBody', 'textBody', 'preview'],
               fetchTextBodyValues: true,
-              fetchHTMLBodyValues: true
+              fetchHTMLBodyValues: true,
+              maxBodyValueBytes: 1048576
             },
             '0'
           ]
@@ -279,7 +285,10 @@ export async function fetchEmailBody(emailId: string): Promise<FetchEmailBodyRes
     const data = await response.json();
     const methodResponse = data.methodResponses?.[0];
     if (methodResponse?.[0] === 'error') {
-      return { body: null, error: `JMAP error: ${methodResponse[1]?.type || 'unknown'}` };
+      const errInfo = methodResponse[1] as { type?: string; description?: string } | undefined;
+      const typeStr = errInfo?.type || 'unknown';
+      const descStr = errInfo?.description ? `: ${errInfo.description}` : '';
+      return { body: null, error: `JMAP error: ${typeStr}${descStr}` };
     }
 
     const email = methodResponse?.[1]?.list?.[0];
@@ -290,7 +299,11 @@ export async function fetchEmailBody(emailId: string): Promise<FetchEmailBodyRes
       return { body: extracted.content, isPlainText: extracted.isPlainText };
     }
 
-    return { body: null };
+    if (typeof email.preview === 'string' && email.preview.length > 0) {
+      return { body: email.preview, isPlainText: true };
+    }
+
+    return { body: null, error: 'This email has no readable content.' };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Network error';
     return { body: null, error: `Network error: ${message}` };

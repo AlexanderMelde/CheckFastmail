@@ -18,16 +18,18 @@ chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResp
     fetchSession(true, token)
       .then((session) => {
         if (session) {
-          chrome.storage.local.set(
-            {
-              access_token: token,
-              api_url: session.apiUrl,
-              account_id: session.accountId
-            },
-            () => {
-              sendResponse({ success: true });
-            }
-          );
+          chrome.storage.local.remove(['inbox_id'], () => {
+            chrome.storage.local.set(
+              {
+                access_token: token,
+                api_url: session.apiUrl,
+                account_id: session.accountId
+              },
+              () => {
+                sendResponse({ success: true });
+              }
+            );
+          });
         } else {
           sendResponse({ success: false });
         }
@@ -58,6 +60,11 @@ chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResp
   }
 
   if (message.type === 'FETCH_EMAIL_BODY') {
+    if (!message.emailId || typeof message.emailId !== 'string') {
+      sendResponse({ body: null, error: 'Invalid email ID' });
+      return;
+    }
+
     fetchEmailBody(message.emailId)
       .then((result) => {
         sendResponse(result);
@@ -117,7 +124,9 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     if (!newToken) {
       chrome.alarms.clear(ALARM_NAME);
       updateBadgeCount(0);
+      chrome.storage.local.remove(['inbox_id', 'api_url', 'account_id']);
     } else {
+      chrome.storage.local.remove(['inbox_id']);
       setupAlarm();
       updateBadge();
     }

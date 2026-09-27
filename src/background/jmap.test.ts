@@ -115,6 +115,20 @@ describe('extractBodyFromEmail', () => {
       isPlainText: true
     });
   });
+
+  it('correctly extracts an empty string body instead of treating it as missing/null', () => {
+    const email = {
+      htmlBody: [{ partId: 'empty-html' }],
+      bodyValues: {
+        'empty-html': { value: '' }
+      }
+    };
+    const result = extractBodyFromEmail(email);
+    expect(result).toEqual({
+      content: '',
+      isPlainText: false
+    });
+  });
 });
 
 describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
@@ -184,6 +198,15 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
         accountId: 'acc-cached'
       });
       expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('returns null if access_token is not present even when forceRefresh is false', async () => {
+      mockStorage = {
+        api_url: 'https://api.fastmail.com/jmap/api',
+        account_id: 'acc-stale'
+      };
+      const session = await fetchSession(false);
+      expect(session).toBeNull();
     });
 
     it('returns null if access_token is not present', async () => {
@@ -577,6 +600,33 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       });
     });
 
+    it('specifies maxBodyValueBytes in Email/get request per RFC 8621 §4.1.4', async () => {
+      mockStorage = {
+        access_token: 'valid-token',
+        api_url: 'https://api.fastmail.com/jmap/api/',
+        account_id: 'acc-mail'
+      };
+
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          methodResponses: [
+            ['Email/get', { list: [{ id: 'msg-1', htmlBody: [{ partId: 'h' }], bodyValues: { h: { value: 'Hi' } } }] }, '0']
+          ]
+        })
+      } as Response);
+
+      await fetchEmailBody('msg-1');
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://api.fastmail.com/jmap/api/',
+        expect.objectContaining({
+          body: expect.stringContaining('"maxBodyValueBytes":1048576')
+        })
+      );
+    });
+
     it('handles 401 Unauthorized by clearing session and reporting error', async () => {
       mockStorage = {
         access_token: 'valid-token',
@@ -592,6 +642,74 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       const result = await fetchEmailBody('msg-123');
       expect(result).toEqual({ body: null, error: 'Authentication expired' });
       expect(mockStorage.access_token).toBeUndefined();
+    });
+
+    it('rejects invalid or empty emailId without executing network fetch', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+      const result = await fetchEmailBody('');
+      expect(result).toEqual({ body: null, error: 'Invalid email ID' });
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('falls back to email.preview when HTML and text body parts are absent', async () => {
+      mockStorage = {
+        access_token: 'valid-token',
+        api_url: 'https://api.fastmail.com/jmap/api/',
+        account_id: 'acc-mail'
+      };
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          methodResponses: [
+            [
+              'Email/get',
+              {
+                list: [
+                  {
+                    id: 'msg-preview-only',
+                    htmlBody: [],
+                    textBody: [],
+                    preview: 'Short snippet from preview.'
+                  }
+                ]
+              },
+              '0'
+            ]
+          ]
+        })
+      } as Response);
+
+      const result = await fetchEmailBody('msg-preview-only');
+      expect(result).toEqual({
+        body: 'Short snippet from preview.',
+        isPlainText: true
+      });
+    });
+
+    it('surfaces JMAP method error description when provided', async () => {
+      mockStorage = {
+        access_token: 'valid-token',
+        api_url: 'https://api.fastmail.com/jmap/api/',
+        account_id: 'acc-mail'
+      };
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          methodResponses: [
+            ['error', { type: 'invalidArguments', description: 'Invalid property requested' }, '0']
+          ]
+        })
+      } as Response);
+
+      const result = await fetchEmailBody('msg-err');
+      expect(result).toEqual({
+        body: null,
+        error: 'JMAP error: invalidArguments: Invalid property requested'
+      });
     });
   });
 });

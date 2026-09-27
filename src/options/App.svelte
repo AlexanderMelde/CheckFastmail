@@ -32,6 +32,7 @@
   }
 
   function handleDisconnect() {
+    errorMsg = '';
     chrome.storage.local.remove(['access_token', 'account_id', 'api_url', 'inbox_id'], () => {
       isConnected = false;
     });
@@ -85,6 +86,7 @@
         type="password" 
         id="apiToken"
         bind:value={apiToken}
+        onkeydown={(e) => { if (e.key === 'Enter') handleSave(); }}
         placeholder="fm1-..." 
         class="border border-slate-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />

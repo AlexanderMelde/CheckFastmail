@@ -2,6 +2,7 @@ import type { EmailItem } from '../types';
 
 const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' });
 const dateFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+const yearDateFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 const fullDateTimeFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
 export function formatTime(dateString: string): string {
@@ -14,7 +15,12 @@ export function formatTime(dateString: string): string {
     d.getMonth() === today.getMonth() &&
     d.getFullYear() === today.getFullYear();
 
-  return isToday ? timeFormatter.format(d) : dateFormatter.format(d);
+  if (isToday) {
+    return timeFormatter.format(d);
+  }
+
+  const isCurrentYear = d.getFullYear() === today.getFullYear();
+  return isCurrentYear ? dateFormatter.format(d) : yearDateFormatter.format(d);
 }
 
 export function getInitials(name?: string): string {
@@ -27,7 +33,7 @@ export function getInitials(name?: string): string {
 }
 
 export function escapeHtml(str?: string): string {
-  if (!str) return '';
+  if (typeof str !== 'string' || !str) return '';
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -93,7 +99,7 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
       <a href="${escapeHtml(openUrl)}" target="_blank" rel="noopener noreferrer" title="Open in Fastmail" class="ext-open-btn">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
       </a>
-      <h2 style="all: initial !important; display: block !important; box-sizing: border-box !important; color: #1e293b !important; margin: 0 0 12px 0 !important; padding: 0 40px 0 0 !important; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif !important; font-size: 17px !important; font-weight: 700 !important; line-height: 24px !important; text-align: left !important;">
+      <h2 style="all: initial !important; display: block !important; box-sizing: border-box !important; color: #1e293b !important; margin: 0 0 12px 0 !important; padding: 0 40px 0 0 !important; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif !important; font-size: 17px !important; font-weight: 700 !important; line-height: 24px !important; text-align: left !important; word-break: break-word !important; overflow-wrap: break-word !important;">
         ${escapeHtml(subject)}
       </h2>
       <div style="all: initial !important; display: flex !important; box-sizing: border-box !important; align-items: center !important; gap: 16px !important; font-family: inherit !important; margin: 0 !important; padding: 0 !important; flex-direction: row !important;">
@@ -114,8 +120,8 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
               ${escapeHtml(dateFormatted)}
             </span>
           </div>
-          <div style="all: initial !important; display: flex !important; box-sizing: border-box !important; font-family: inherit !important; margin: 0 !important; padding: 0 !important; gap: 6px !important;">
-            <span style="all: initial !important; font-family: inherit !important; font-size: 13px !important; color: #64748b !important; height: 20px !important; line-height: 20px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important;">
+          <div style="all: initial !important; display: flex !important; box-sizing: border-box !important; font-family: inherit !important; margin: 0 !important; padding: 0 !important; gap: 6px !important; min-width: 0 !important;">
+            <span title="${escapeHtml(toFormatted)}" style="all: initial !important; font-family: inherit !important; font-size: 13px !important; color: #64748b !important; height: 20px !important; line-height: 20px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; min-width: 0 !important;">
               to ${escapeHtml(toFormatted)}
             </span>
           </div>
@@ -131,10 +137,20 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
     renderedBody = `<pre style="white-space: pre-wrap; word-break: break-word; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; padding: 18px; margin: 0; color: #1e293b;">${escapeHtml(bodyContent)}</pre>`;
   }
 
+  // Use replacer functions in all String.prototype.replace calls to prevent
+  // special replacement patterns ($&, $', $`, $1) from corrupting output
+  const headTagMatch = renderedBody.match(/<head[^>]*>/i);
   const bodyTagMatch = renderedBody.match(/<body[^>]*>/i);
-  if (bodyTagMatch) {
-    return securityHead + renderedBody.replace(bodyTagMatch[0], bodyTagMatch[0] + trackerFixStyle + headerHtml);
-  } else {
-    return securityHead + trackerFixStyle + headerHtml + renderedBody;
+
+  if (headTagMatch && bodyTagMatch) {
+    renderedBody = renderedBody.replace(headTagMatch[0], () => headTagMatch[0] + securityHead);
+    return renderedBody.replace(bodyTagMatch[0], () => bodyTagMatch[0] + trackerFixStyle + headerHtml);
   }
+
+  if (bodyTagMatch) {
+    renderedBody = renderedBody.replace(bodyTagMatch[0], () => bodyTagMatch[0] + trackerFixStyle + headerHtml);
+    return `<head>${securityHead}</head>` + renderedBody;
+  }
+
+  return securityHead + trackerFixStyle + headerHtml + renderedBody;
 }

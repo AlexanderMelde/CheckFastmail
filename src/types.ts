@@ -54,5 +54,6 @@ export interface EmailDetail {
   htmlBody?: EmailBodyPart[];
   textBody?: EmailBodyPart[];
   bodyValues?: Record<string, EmailBodyValue>;
+  preview?: string;
 }
 

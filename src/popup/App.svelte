@@ -1,6 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { EmailItem, FetchUnreadResponse, FetchEmailBodyResponse } from "../types";
+  import type {
+    EmailItem,
+    FetchUnreadResponse,
+    FetchEmailBodyResponse,
+  } from "../types";
   import { formatTime, buildIframeContent } from "./format";
 
   let unreadEmails = $state<EmailItem[]>([]);
@@ -11,6 +15,7 @@
 
   let selectedEmail = $state<EmailItem | null>(null);
   let emailBody = $state<string | null>(null);
+  let emailBodyError = $state(false);
   let isPlainText = $state(false);
   let isLoadingBody = $state(false);
 
@@ -22,43 +27,62 @@
     const startTime = Date.now();
     const finishLoading = () => {
       const elapsed = Date.now() - startTime;
-      if (elapsed < 500) {
+      if (elapsed < 300) {
         setTimeout(() => (isLoading = false), 500 - elapsed);
       } else {
         isLoading = false;
       }
     };
 
-    chrome.runtime.sendMessage({ type: "FETCH_UNREAD" }, (response: FetchUnreadResponse) => {
-      hasInitialized = true;
-      if (chrome.runtime.lastError) {
-        errorMsg = "Error communicating with background script.";
-        finishLoading();
-        return;
-      }
-
-      if (response && response.notAuthenticated) {
-        notAuthenticated = true;
-      } else if (response && response.error) {
-        errorMsg = response.error;
-      } else if (response && response.emails) {
-        unreadEmails = response.emails;
-        if (
-          selectedEmail &&
-          !unreadEmails.find((e) => e.id === selectedEmail?.id)
-        ) {
-          selectedEmail = null;
-          emailBody = null;
+    chrome.runtime.sendMessage(
+      { type: "FETCH_UNREAD" },
+      (response: FetchUnreadResponse) => {
+        hasInitialized = true;
+        if (chrome.runtime.lastError) {
+          errorMsg = "Error communicating with background script.";
+          finishLoading();
+          return;
         }
-      } else {
-        errorMsg = "Failed to fetch emails. Please check your connection in Options.";
-      }
-      finishLoading();
-    });
+
+        if (response && response.notAuthenticated) {
+          notAuthenticated = true;
+        } else if (response && response.error) {
+          errorMsg = response.error;
+        } else if (response && response.emails) {
+          unreadEmails = response.emails;
+          if (
+            selectedEmail &&
+            !unreadEmails.find((e) => e.id === selectedEmail?.id)
+          ) {
+            selectedEmail = null;
+            emailBody = null;
+            emailBodyError = false;
+          }
+        } else {
+          errorMsg =
+            "Failed to fetch emails. Please check your connection in Options.";
+        }
+        finishLoading();
+      },
+    );
   }
 
   onMount(() => {
     fetchEmails();
+
+    const storageListener = (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      areaName: string,
+    ) => {
+      if (areaName === "local" && "access_token" in changes) {
+        fetchEmails();
+      }
+    };
+
+    chrome.storage?.onChanged?.addListener(storageListener);
+    return () => {
+      chrome.storage?.onChanged?.removeListener(storageListener);
+    };
   });
 
   function handleRefresh() {
@@ -70,9 +94,14 @@
   }
 
   function selectEmail(email: EmailItem) {
-    if (selectedEmail?.id === email.id && emailBody !== null) return;
+    if (selectedEmail?.id === email.id && emailBody !== null && !emailBodyError)
+      return;
+    if (selectedEmail?.id === email.id && isLoadingBody)
+      return;
+
     selectedEmail = email;
     emailBody = null;
+    emailBodyError = false;
     isPlainText = false;
     isLoadingBody = true;
 
@@ -83,6 +112,7 @@
           if (selectedEmail && selectedEmail.id === email.id) {
             isLoadingBody = false;
             emailBody = "Error communicating with background script.";
+            emailBodyError = true;
             isPlainText = true;
           }
           return;
@@ -92,13 +122,17 @@
           isLoadingBody = false;
           if (response && response.body !== null) {
             emailBody = response.body;
+            emailBodyError = false;
             isPlainText = Boolean(response.isPlainText);
           } else {
-            emailBody = response?.error ? `Error: ${response.error}` : "Could not load email content.";
+            emailBody = response?.error
+              ? `Error: ${response.error}`
+              : "Could not load email content.";
+            emailBodyError = true;
             isPlainText = true;
           }
         }
-      }
+      },
     );
   }
 </script>
@@ -109,21 +143,44 @@
     style="background: linear-gradient(290deg, #49578d 5%, #7934a3 95%); color: #ffffff;"
   >
     <div class="flex items-center gap-2">
-      <h1 class="text-[15.75px] font-bold font-sans">
-        Checker for Fastmail
-      </h1>
+      <h1 class="text-[15.75px] font-bold font-sans">Checker for Fastmail</h1>
     </div>
-    {#if !notAuthenticated}
+    <div class="flex items-center gap-1">
+      {#if !notAuthenticated}
+        <button
+          onclick={handleRefresh}
+          disabled={isLoading}
+          class="w-[28px] h-[28px] flex items-center justify-center bg-transparent hover:bg-white/10 active:bg-white/20 rounded-[6px] transition-all duration-150 ease-in-out focus:outline-none disabled:opacity-50 cursor-pointer text-white"
+          title="Refresh Unread"
+          aria-label="Refresh"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-[17px] h-[17px] {isLoading
+              ? 'animate-[spin_1s_linear_infinite]'
+              : ''}"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.75"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+        </button>
+      {/if}
       <button
-        onclick={handleRefresh}
-        disabled={isLoading}
-        class="w-[28px] h-[28px] flex items-center justify-center bg-transparent hover:bg-white/10 active:bg-white/20 rounded-[6px] transition-all duration-150 ease-in-out focus:outline-none disabled:opacity-50 cursor-pointer text-white"
-        title="Refresh Unread"
-        aria-label="Refresh"
+        onclick={openOptions}
+        class="w-[28px] h-[28px] flex items-center justify-center bg-transparent hover:bg-white/10 active:bg-white/20 rounded-[6px] transition-all duration-150 ease-in-out focus:outline-none cursor-pointer text-white"
+        title="Settings"
+        aria-label="Settings"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="w-[17px] h-[17px] {isLoading ? 'animate-[spin_1s_linear_infinite]' : ''}"
+          class="w-[17px] h-[17px]"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -132,11 +189,17 @@
             stroke-linecap="round"
             stroke-linejoin="round"
             stroke-width="1.75"
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.75"
+            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
           />
         </svg>
       </button>
-    {/if}
+    </div>
   </header>
 
   <div class="flex-1 flex overflow-hidden">
@@ -145,7 +208,9 @@
       class="w-1/3 min-w-[260px] max-w-[320px] border-r border-slate-200 overflow-y-auto bg-white flex flex-col custom-scrollbar"
     >
       {#if errorMsg}
-        <div class="p-2.5 px-3 bg-red-50 border-b border-red-100 flex items-center justify-between text-xs text-red-700 shrink-0">
+        <div
+          class="p-2.5 px-3 bg-red-50 border-b border-red-100 flex items-center justify-between text-xs text-red-700 shrink-0"
+        >
           <span class="truncate pr-2">{errorMsg}</span>
           <button
             type="button"
@@ -253,9 +318,7 @@
                         email.from?.[0]?.email ||
                         "Unknown"}
                     </span>
-                    <span
-                      class="text-slate-500 shrink-0 text-[12px]"
-                    >
+                    <span class="text-slate-500 shrink-0 text-[12px]">
                       {formatTime(email.receivedAt)}
                     </span>
                   </div>
@@ -264,7 +327,7 @@
                   >
                     {email.subject || "(No Subject)"}
                   </div>
-                  <div 
+                  <div
                     class="text-slate-500 truncate text-[12px] font-normal leading-[17px]"
                   >
                     {email.preview || "..."}
@@ -280,13 +343,30 @@
     <!-- Right Pane: Preview -->
     <div class="flex-1 flex flex-col bg-[#fdfcfd] overflow-hidden relative">
       {#if selectedEmail}
-        <div class="flex-1 overflow-hidden bg-white flex flex-col shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-20">
+        <div
+          class="flex-1 overflow-hidden bg-white flex flex-col shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-20"
+        >
           {#if isLoadingBody}
             <div class="p-6 animate-pulse space-y-4 mt-4">
               <div class="h-4 bg-slate-100 rounded w-3/4"></div>
               <div class="h-4 bg-slate-100 rounded w-full"></div>
               <div class="h-4 bg-slate-100 rounded w-5/6"></div>
               <div class="h-4 bg-slate-100 rounded w-1/2"></div>
+            </div>
+          {:else if emailBodyError}
+            <div
+              class="p-6 flex flex-col items-center justify-center h-full text-center space-y-3"
+            >
+              <p class="text-sm text-red-600">
+                {emailBody || "Could not load email content."}
+              </p>
+              <button
+                type="button"
+                onclick={() => selectEmail(selectedEmail!)}
+                class="px-4 py-1.5 bg-[#8b45f3] text-white rounded text-xs font-medium hover:bg-[#7837d9] transition-colors cursor-pointer"
+              >
+                Retry
+              </button>
             </div>
           {:else if emailBody !== null}
             <iframe
@@ -338,5 +418,8 @@
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background-color: #cbd5e1;
     border-radius: 20px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
   }
 </style>

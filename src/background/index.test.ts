@@ -40,7 +40,9 @@ const mockStorage = vi.hoisted(() => ({
     set: vi.fn((_items, cb) => {
       cb?.();
     }),
-    remove: vi.fn(async () => {})
+    remove: vi.fn((_keys, cb) => {
+      cb?.();
+    })
   }
 }));
 
@@ -146,14 +148,16 @@ describe('Background Worker Lifecycle & Badge Management', () => {
 
       expect(mockAlarms.clear).toHaveBeenCalledWith(ALARM_NAME);
       expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '' });
+      expect(mockStorage.local.remove).toHaveBeenCalledWith(['inbox_id', 'api_url', 'account_id']);
     });
 
-    it('sets up alarm when access_token is set or updated', () => {
+    it('sets up alarm and clears cached inbox_id when access_token is set or updated', () => {
       expect(callbacks.storageListener).toBeDefined();
       mockAlarms.get.mockImplementationOnce((_name, cb) => cb(null));
 
       callbacks.storageListener({ access_token: { newValue: 'tok-new' } }, 'local');
 
+      expect(mockStorage.local.remove).toHaveBeenCalledWith(['inbox_id']);
       expect(mockAlarms.create).toHaveBeenCalledWith(ALARM_NAME, { periodInMinutes: 5 });
     });
   });
@@ -178,6 +182,7 @@ describe('Background Worker Lifecycle & Badge Management', () => {
       });
 
       expect(mockJmap.fetchSession).toHaveBeenCalledWith(true, 'valid-test-token');
+      expect(mockStorage.local.remove).toHaveBeenCalledWith(['inbox_id'], expect.any(Function));
       expect(mockStorage.local.set).toHaveBeenCalledWith(
         {
           access_token: 'valid-test-token',
@@ -204,6 +209,34 @@ describe('Background Worker Lifecycle & Badge Management', () => {
       });
 
       expect(mockStorage.local.set).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('FETCH_EMAIL_BODY Message Handler', () => {
+    it('returns error when emailId is missing or empty', () => {
+      const sendResponse = vi.fn();
+      callbacks.messageListener({ type: 'FETCH_EMAIL_BODY', emailId: '' }, {}, sendResponse);
+      expect(sendResponse).toHaveBeenCalledWith({ body: null, error: 'Invalid email ID' });
+      expect(mockJmap.fetchEmailBody).not.toHaveBeenCalled();
+    });
+
+    it('delegates to fetchEmailBody and replies with response when emailId is valid', async () => {
+      mockJmap.fetchEmailBody.mockResolvedValueOnce({
+        body: '<p>Content</p>',
+        isPlainText: false
+      });
+
+      const sendResponse = vi.fn();
+      callbacks.messageListener({ type: 'FETCH_EMAIL_BODY', emailId: 'msg-valid' }, {}, sendResponse);
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith({
+          body: '<p>Content</p>',
+          isPlainText: false
+        });
+      });
+
+      expect(mockJmap.fetchEmailBody).toHaveBeenCalledWith('msg-valid');
     });
   });
 });
