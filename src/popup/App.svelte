@@ -6,6 +6,7 @@
     FetchEmailBodyResponse,
   } from "../types";
   import { formatTime, buildIframeContent } from "./format";
+  import Header from "../components/Header.svelte";
 
   let unreadEmails = $state<EmailItem[]>([]);
   let isLoading = $state(true);
@@ -143,49 +144,20 @@
 </script>
 
 <main class="flex flex-col bg-white h-[600px] w-full font-sans text-[14px]">
-  <header
-    class="flex justify-between items-center p-4 shrink-0 shadow-sm z-10 h-14"
-    style="background: linear-gradient(290deg, #49578d 5%, #7934a3 95%); color: #ffffff;"
-  >
-    <div class="flex items-center gap-2">
-      <h1 class="text-[15.75px] font-bold font-sans">Checker for Fastmail</h1>
-    </div>
-    <div class="flex items-center gap-1">
-      {#if !notAuthenticated}
-        <button
-          onclick={handleRefresh}
-          disabled={isLoading}
-          class="w-[28px] h-[28px] flex items-center justify-center bg-transparent hover:bg-white/10 active:bg-white/20 rounded-[6px] transition-all duration-150 ease-in-out focus:outline-none disabled:opacity-50 cursor-pointer text-white"
-          title="Refresh Unread"
-          aria-label="Refresh"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="w-[17px] h-[17px] {isLoading
-              ? 'animate-[spin_1s_linear_infinite]'
-              : ''}"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.75"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-        </button>
-      {/if}
+  <Header>
+    {#if !notAuthenticated}
       <button
-        onclick={openOptions}
-        class="w-[28px] h-[28px] flex items-center justify-center bg-transparent hover:bg-white/10 active:bg-white/20 rounded-[6px] transition-all duration-150 ease-in-out focus:outline-none cursor-pointer text-white"
-        title="Settings"
-        aria-label="Settings"
+        onclick={handleRefresh}
+        disabled={isLoading}
+        class="w-[28px] h-[28px] flex items-center justify-center bg-transparent hover:bg-white/10 active:bg-white/20 rounded-[6px] transition-all duration-150 ease-in-out focus:outline-none disabled:opacity-50 cursor-pointer text-white"
+        title="Refresh Unread"
+        aria-label="Refresh"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="w-[17px] h-[17px]"
+          class="w-[17px] h-[17px] {isLoading
+            ? 'animate-[spin_1s_linear_infinite]'
+            : ''}"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -194,18 +166,39 @@
             stroke-linecap="round"
             stroke-linejoin="round"
             stroke-width="1.75"
-            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-          />
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.75"
-            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
           />
         </svg>
       </button>
-    </div>
-  </header>
+    {/if}
+    <button
+      onclick={openOptions}
+      class="w-[28px] h-[28px] flex items-center justify-center bg-transparent hover:bg-white/10 active:bg-white/20 rounded-[6px] transition-all duration-150 ease-in-out focus:outline-none cursor-pointer text-white"
+      title="Settings"
+      aria-label="Settings"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="w-[17px] h-[17px]"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.75"
+          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+        />
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.75"
+          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+        />
+      </svg>
+    </button>
+  </Header>
 
   <div class="flex-1 flex overflow-hidden">
     {#if notAuthenticated}

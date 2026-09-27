@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { SaveTokenResponse } from "../types";
+  import Header from "../components/Header.svelte";
 
   let isConnected = $state(false);
   let apiToken = $state("");
@@ -69,15 +70,7 @@
 </script>
 
 <div class="flex flex-col min-h-screen font-sans text-[14px] text-slate-700 bg-slate-50">
-  <!-- Header -->
-  <header
-    class="flex items-center justify-between h-12 px-5 shrink-0 z-10"
-    style="background: linear-gradient(290deg, #49578d 5%, #7934a3 95%); color: #ffffff;"
-  >
-    <div class="flex items-center gap-2">
-      <span class="text-[15.75px] font-bold font-sans">Checker for Fastmail</span>
-    </div>
-  </header>
+  <Header />
 
   <div class="flex flex-1 min-h-0">
     <!-- Sidebar -->
