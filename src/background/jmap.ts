@@ -122,7 +122,7 @@ export async function getUnreadEmails(): Promise<{ emails: any[], notAuthenticat
             {
               accountId: session.accountId,
               ids: emailIds,
-              properties: ["id", "threadId", "subject", "from", "receivedAt", "preview"]
+              properties: ["id", "threadId", "subject", "from", "to", "receivedAt", "preview"]
             },
             "0"
           ]
