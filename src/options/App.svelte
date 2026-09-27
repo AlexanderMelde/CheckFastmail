@@ -110,6 +110,22 @@
       </button>
     </div>
   {:else}
+    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-5 mb-6 text-emerald-900">
+      <div class="flex items-start gap-3">
+        <div class="mt-0.5 p-1 bg-emerald-100 rounded-full text-emerald-700 shrink-0">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="font-semibold text-base text-emerald-950 mb-1">You're all set!</h3>
+          <p class="text-sm text-emerald-800 leading-relaxed">
+            Click the extension icon in your browser toolbar to view your unread emails. You can also pin it for one-click access.
+          </p>
+        </div>
+      </div>
+    </div>
+
     <div class="flex space-x-4 mb-6">
       <button onclick={handleDisconnect} class="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium cursor-pointer">
         Disconnect
