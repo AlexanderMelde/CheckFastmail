@@ -103,8 +103,8 @@ describe('Security: Untrusted and Malicious Email Rendering', () => {
     expect(output).toContain('&lt;script&gt;evil()&lt;/script&gt;');
   });
 
-  it('confirms the App.svelte iframe sandbox strictly prohibits allow-scripts and allow-same-origin', () => {
-    const sveltePath = path.resolve(__dirname, 'App.svelte');
+  it('confirms the EmailPreview.svelte iframe sandbox strictly prohibits allow-scripts and allow-same-origin', () => {
+    const sveltePath = path.resolve(__dirname, '../components/EmailPreview.svelte');
     const svelteContent = fs.readFileSync(sveltePath, 'utf-8');
 
     // Extract iframe sandbox attribute value

@@ -22,3 +22,7 @@ body {
   background-color: #94a3b8;
 }
 
+.header-btn {
+  @apply w-[28px] h-[28px] flex items-center justify-center bg-transparent hover:bg-white/10 active:bg-white/20 rounded-[6px] transition-all duration-150 ease-in-out focus:outline-none disabled:opacity-50 cursor-pointer text-white;
+}
+
