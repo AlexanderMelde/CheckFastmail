@@ -6,11 +6,10 @@ Built with **Svelte 5**, **Vite**, and **TypeScript**, running on Chrome Manifes
 
 ## Features
 
-- **Two-Pane Layout:** View unread emails in a sidebar and preview full email content in a sandboxed viewport.
-- **Unified Scrolling:** Email headers and bodies scroll naturally together inside the sandboxed view.
-- **Hardened Security:** Email bodies run with strict sandboxing (`sandbox="allow-popups allow-popups-to-escape-sandbox"`), with `allow-scripts` and `allow-same-origin` omitted. A strict Content Security Policy (`default-src 'none'; img-src https: data:; style-src 'unsafe-inline';`) prevents malicious script execution.
-- **Smart Background Polling:** A background Service Worker polls Fastmail every 5 minutes to keep the toolbar unread badge updated.
-- **Privacy First:** 0% external data collection. Direct communication strictly between your browser and Fastmail (`api.fastmail.com`).
+- **Blazing Fast & Lightweight:** Opens instantly with zero bloat, communicating directly with Fastmail for near-instant message loading.
+- **Privacy & Security First:** No added third-party servers, tracking scripts or zero analytics. Emails render inside an isolated viewer.
+- **Live Toolbar Badge:** Always know when you have incoming mail with an automatic, low-power unread badge right on your extension icon.
+- **Clean, Distraction-Free UI:** A modern, uncluttered interface built to let you check and read unread messages quickly without losing your workflow.
 
 ## Project Structure
 
