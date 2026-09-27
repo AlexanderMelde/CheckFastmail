@@ -23,7 +23,7 @@ export function formatTime(dateString: string): string {
   return isCurrentYear ? dateFormatter.format(d) : yearDateFormatter.format(d);
 }
 
-export const FASTMAIL_MESSAGE_URL_PREFIX = 'https://www.fastmail.com/mail/Message/';
+export const FASTMAIL_MESSAGE_URL_PREFIX = 'https://app.fastmail.com/mail/Message/';
 const INITIALS_FALLBACK_LENGTH = 2;
 
 export function getInitials(name?: string): string {
@@ -57,9 +57,9 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
   const toFormatted =
     Array.isArray(email.to) && email.to.length > 0
       ? email.to
-          .map((t) => (t.name && t.email && t.name !== t.email ? `${t.name} <${t.email}>` : t.name || t.email || ''))
-          .filter(Boolean)
-          .join(', ') || 'you'
+        .map((t) => (t.name && t.email && t.name !== t.email ? `${t.name} <${t.email}>` : t.name || t.email || ''))
+        .filter(Boolean)
+        .join(', ') || 'you'
       : 'you';
   const initials = getInitials(email.from?.[0]?.name || email.from?.[0]?.email);
 
@@ -118,11 +118,10 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
             <span style="all: initial !important; font-family: inherit !important; font-size: 14px !important; font-weight: 600 !important; color: #1e293b !important; height: 20px !important; line-height: 20px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; flex-shrink: 0 !important;">
               ${escapeHtml(fromNameOnly)}
             </span>
-            ${
-              fromEmailOnly
-                ? `<span title="${escapeHtml(email.from?.[0]?.email)}" style="all: initial !important; font-family: inherit !important; font-size: 14px !important; color: #94a3b8 !important; height: 20px !important; line-height: 20px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; flex-shrink: 1 !important;">${escapeHtml(fromEmailOnly)}</span>`
-                : ''
-            }
+            ${fromEmailOnly
+      ? `<span title="${escapeHtml(email.from?.[0]?.email)}" style="all: initial !important; font-family: inherit !important; font-size: 14px !important; color: #94a3b8 !important; height: 20px !important; line-height: 20px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; flex-shrink: 1 !important;">${escapeHtml(fromEmailOnly)}</span>`
+      : ''
+    }
             <span style="all: initial !important; font-family: inherit !important; font-size: 14px !important; color: #1e293b !important; height: 20px !important; line-height: 20px !important; white-space: nowrap !important; flex-shrink: 0 !important; margin-left: auto !important;">
               ${escapeHtml(dateFormatted)}
             </span>
@@ -137,6 +136,7 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
     </div>
   `;
 
+  // known challenge: this prevents some layout errrors, but it does not prevent browsers from sending HTTP requests for the tracking image. It may also break layouts in legacy HTML newsletters that use 1x1 spacer GIFs for column alignment.
   const trackerFixStyle = `<style>img[width="1"][height="1"], img[width="0"][height="0"] { display: none !important; position: absolute !important; }</style>`;
 
   let renderedBody = bodyContent;
