@@ -93,7 +93,7 @@ describe('buildIframeContent', () => {
     expect(result).toContain('Project Update');
     expect(result).toContain('Alice Smith');
     expect(result).toContain('Meeting notes enclosed.');
-    expect(result).toContain('https://www.fastmail.com/mail/Message/msg-123');
+    expect(result).toContain('https://app.fastmail.com/mail/Message/msg-123');
   });
 
   it('wraps plain text content safely in a pre tag', () => {

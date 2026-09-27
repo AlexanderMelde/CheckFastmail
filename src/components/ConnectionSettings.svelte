@@ -66,7 +66,7 @@
     <ol class="m-0 pl-5 space-y-1">
       <li>
         Go to your Fastmail settings: <a
-          href="https://www.fastmail.com/settings/security/tokens"
+          href="https://app.fastmail.com/settings/security/tokens"
           target="_blank"
           rel="noopener noreferrer"
           class="text-purple-800 underline hover:text-purple-950"

@@ -22,6 +22,7 @@
   let isPlainText = $state(false);
   let isLoadingBody = $state(false);
 
+  // Ensures the user notices that his action is happening
   const MIN_LOADING_SPINNER_MS = 300;
 
   async function fetchEmails() {
@@ -50,8 +51,7 @@
       unreadEmails = response.emails;
       if (unreadEmails.length > 0) {
         const stillSelected =
-          selectedEmail &&
-          unreadEmails.find((e) => e.id === selectedEmail?.id);
+          selectedEmail && unreadEmails.find((e) => e.id === selectedEmail?.id);
         if (!stillSelected) {
           selectEmail(unreadEmails[0]);
         }
