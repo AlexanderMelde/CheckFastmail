@@ -1,9 +1,11 @@
 <script lang="ts">
   import type { EmailItem } from "../types";
   import EmailListItem from "./EmailListItem.svelte";
+  import { formatListTruncationNotice } from "../popup/format";
 
   interface Props {
     emails: EmailItem[];
+    totalCount?: number;
     selectedEmailId?: string;
     isLoading: boolean;
     errorMsg: string;
@@ -13,12 +15,17 @@
 
   let {
     emails,
+    totalCount,
     selectedEmailId,
     isLoading,
     errorMsg,
     onselect,
     onretry,
   }: Props = $props();
+
+  let truncationNotice = $derived(
+    formatListTruncationNotice(emails.length, totalCount)
+  );
 </script>
 
 <div
@@ -70,6 +77,14 @@
         />
       {/each}
     </ul>
+    {#if truncationNotice}
+      <div
+        class="py-3 px-3 text-center text-xs text-slate-500 bg-slate-50/90 border-t border-slate-100 shrink-0 select-none"
+        role="status"
+      >
+        {truncationNotice}
+      </div>
+    {/if}
   {/if}
 </div>
 

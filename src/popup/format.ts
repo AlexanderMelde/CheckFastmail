@@ -172,3 +172,21 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
 
   return securityHead + trackerFixStyle + headerHtml + renderedBody;
 }
+
+export function formatListTruncationNotice(
+  displayedCount: number,
+  totalCount?: number,
+  limit = 100
+): string | null {
+  if (typeof totalCount === 'number') {
+    if (totalCount > displayedCount) {
+      return `Only the first ${displayedCount} of ${totalCount} emails are displayed.`;
+    }
+    return null;
+  }
+  if (displayedCount >= limit && limit > 0) {
+    return `Only the first ${displayedCount} emails are displayed.`;
+  }
+  return null;
+}
+

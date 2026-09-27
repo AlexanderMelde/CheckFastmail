@@ -205,4 +205,22 @@ describe('extensionClient Service', () => {
       expect(chrome.runtime.openOptionsPage).toHaveBeenCalled();
     });
   });
+
+  describe('getCachedUnread (SWR Instant Cache)', () => {
+    it('returns cached emails and total count from local storage', async () => {
+      mockStorageData[STORAGE_KEYS.CACHED_EMAILS] = [{ id: 'cached-1', subject: 'Offline email' }];
+      mockStorageData[STORAGE_KEYS.CACHED_TOTAL_COUNT] = 42;
+
+      const result = await extensionClient.getCachedUnread();
+      expect(result.emails).toHaveLength(1);
+      expect(result.emails[0].id).toBe('cached-1');
+      expect(result.totalCount).toBe(42);
+    });
+
+    it('returns empty emails array when no cache exists', async () => {
+      const result = await extensionClient.getCachedUnread();
+      expect(result.emails).toEqual([]);
+      expect(result.totalCount).toBeUndefined();
+    });
+  });
 });

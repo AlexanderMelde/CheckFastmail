@@ -1,5 +1,5 @@
 import { getUnreadEmails, fetchSession, fetchEmailBody } from './jmap';
-import type { MessageRequest } from '../types';
+import type { MessageRequest, FetchUnreadResponse } from '../types';
 import { STORAGE_KEYS } from '../types';
 
 export const ALARM_NAME = 'POLL_FASTMAIL';
@@ -32,6 +32,20 @@ if (typeof chrome.contextMenus?.onClicked?.addListener === 'function') {
   });
 }
 
+export function applyUnreadResult(result: FetchUnreadResponse): void {
+  if (result.notAuthenticated) {
+    updateBadgeCount(0);
+    chrome.storage.local.remove([STORAGE_KEYS.CACHED_EMAILS, STORAGE_KEYS.CACHED_TOTAL_COUNT]);
+  } else if (!result.error && result.emails) {
+    const count = typeof result.totalCount === 'number' ? result.totalCount : result.emails.length;
+    updateBadgeCount(count);
+    chrome.storage.local.set({
+      [STORAGE_KEYS.CACHED_EMAILS]: result.emails,
+      [STORAGE_KEYS.CACHED_TOTAL_COUNT]: count
+    });
+  }
+}
+
 // Listen for messages from popup or options UI
 chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResponse) => {
   if (!message || typeof message.type !== 'string') return;
@@ -47,7 +61,11 @@ chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResp
     fetchSession(true, token)
       .then((session) => {
         if (session) {
-          chrome.storage.local.remove([STORAGE_KEYS.INBOX_ID], () => {
+          chrome.storage.local.remove([
+            STORAGE_KEYS.INBOX_ID,
+            STORAGE_KEYS.CACHED_EMAILS,
+            STORAGE_KEYS.CACHED_TOTAL_COUNT
+          ], () => {
             chrome.storage.local.set(
               {
                 [STORAGE_KEYS.ACCESS_TOKEN]: token,
@@ -73,12 +91,7 @@ chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResp
     getUnreadEmails()
       .then((result) => {
         sendResponse(result);
-        if (result.notAuthenticated) {
-          updateBadgeCount(0);
-        } else if (!result.error && result.emails) {
-          const count = typeof result.totalCount === 'number' ? result.totalCount : result.emails.length;
-          updateBadgeCount(count);
-        }
+        applyUnreadResult(result);
       })
       .catch((err) => {
         sendResponse({
@@ -127,12 +140,7 @@ export async function updateBadge(): Promise<void> {
     try {
       const result = await getUnreadEmails();
       if (!result) return;
-      if (result.notAuthenticated) {
-        await updateBadgeCount(0);
-      } else if (!result.error && result.emails) {
-        const count = typeof result.totalCount === 'number' ? result.totalCount : result.emails.length;
-        await updateBadgeCount(count);
-      }
+      applyUnreadResult(result);
     } finally {
       inFlightUpdateBadge = null;
     }
@@ -170,10 +178,16 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
       chrome.storage.local.remove([
         STORAGE_KEYS.INBOX_ID,
         STORAGE_KEYS.API_URL,
-        STORAGE_KEYS.ACCOUNT_ID
+        STORAGE_KEYS.ACCOUNT_ID,
+        STORAGE_KEYS.CACHED_EMAILS,
+        STORAGE_KEYS.CACHED_TOTAL_COUNT
       ]);
     } else {
-      chrome.storage.local.remove([STORAGE_KEYS.INBOX_ID]);
+      chrome.storage.local.remove([
+        STORAGE_KEYS.INBOX_ID,
+        STORAGE_KEYS.CACHED_EMAILS,
+        STORAGE_KEYS.CACHED_TOTAL_COUNT
+      ]);
       setupAlarm();
       updateBadge();
     }

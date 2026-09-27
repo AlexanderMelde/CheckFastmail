@@ -3,7 +3,7 @@ import { STORAGE_KEYS, ALL_AUTH_KEYS } from '../types';
 
 const SESSION_URL = 'https://api.fastmail.com/jmap/session';
 export const HTTP_STATUS_UNAUTHORIZED = 401;
-export const UNREAD_EMAILS_LIMIT = 30;
+export const UNREAD_EMAILS_LIMIT = 100;
 export const MAX_BODY_VALUE_BYTES = 1048576; // 1 MB per RFC 8621 §4.1.4
 export const REQUEST_TIMEOUT_MS = 15000; // 15 seconds per request timeout
 

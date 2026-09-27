@@ -170,7 +170,9 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
         access_token: 'tok-123',
         api_url: 'https://api.fastmail.com/jmap/api',
         account_id: 'acc-123',
-        inbox_id: 'inbox-123'
+        inbox_id: 'inbox-123',
+        cached_emails: [{ id: '1' }],
+        cached_total_count: 5
       };
 
       await clearSession();
@@ -179,6 +181,8 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       expect(mockStorage.api_url).toBeUndefined();
       expect(mockStorage.account_id).toBeUndefined();
       expect(mockStorage.inbox_id).toBeUndefined();
+      expect(mockStorage.cached_emails).toBeUndefined();
+      expect(mockStorage.cached_total_count).toBeUndefined();
     });
   });
 

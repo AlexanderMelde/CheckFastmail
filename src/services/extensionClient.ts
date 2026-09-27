@@ -1,7 +1,27 @@
-import type { FetchUnreadResponse, FetchEmailBodyResponse, SaveTokenResponse, MessageRequest } from '../types';
+import type {
+  EmailItem,
+  FetchUnreadResponse,
+  FetchEmailBodyResponse,
+  SaveTokenResponse,
+  MessageRequest
+} from '../types';
 import { STORAGE_KEYS, ALL_AUTH_KEYS } from '../types';
 
 export const extensionClient = {
+  async getCachedUnread(): Promise<{ emails: EmailItem[]; totalCount?: number }> {
+    const result = (await chrome.storage.local.get([
+      STORAGE_KEYS.CACHED_EMAILS,
+      STORAGE_KEYS.CACHED_TOTAL_COUNT
+    ])) || {};
+    const emails = Array.isArray(result[STORAGE_KEYS.CACHED_EMAILS])
+      ? (result[STORAGE_KEYS.CACHED_EMAILS] as EmailItem[])
+      : [];
+    const totalCount =
+      typeof result[STORAGE_KEYS.CACHED_TOTAL_COUNT] === 'number'
+        ? (result[STORAGE_KEYS.CACHED_TOTAL_COUNT] as number)
+        : undefined;
+    return { emails, totalCount };
+  },
   fetchUnread(): Promise<FetchUnreadResponse> {
     return new Promise((resolve) => {
       chrome.runtime.sendMessage(

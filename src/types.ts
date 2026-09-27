@@ -62,14 +62,18 @@ export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'access_token',
   API_URL: 'api_url',
   ACCOUNT_ID: 'account_id',
-  INBOX_ID: 'inbox_id'
+  INBOX_ID: 'inbox_id',
+  CACHED_EMAILS: 'cached_emails',
+  CACHED_TOTAL_COUNT: 'cached_total_count'
 } as const;
 
 export const ALL_AUTH_KEYS = [
   STORAGE_KEYS.ACCESS_TOKEN,
   STORAGE_KEYS.API_URL,
   STORAGE_KEYS.ACCOUNT_ID,
-  STORAGE_KEYS.INBOX_ID
+  STORAGE_KEYS.INBOX_ID,
+  STORAGE_KEYS.CACHED_EMAILS,
+  STORAGE_KEYS.CACHED_TOTAL_COUNT
 ] as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

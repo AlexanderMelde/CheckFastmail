@@ -87,7 +87,7 @@ vi.hoisted(() => {
   } as any;
 });
 
-import { updateBadgeCount, updateBadge, setupAlarm, ALARM_NAME } from './index';
+import { updateBadgeCount, updateBadge, setupAlarm, ALARM_NAME, applyUnreadResult } from './index';
 
 describe('Background Worker Lifecycle & Badge Management', () => {
   beforeEach(() => {
@@ -203,7 +203,13 @@ describe('Background Worker Lifecycle & Badge Management', () => {
 
       expect(mockAlarms.clear).toHaveBeenCalledWith(ALARM_NAME);
       expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '' });
-      expect(mockStorage.local.remove).toHaveBeenCalledWith(['inbox_id', 'api_url', 'account_id']);
+      expect(mockStorage.local.remove).toHaveBeenCalledWith([
+        'inbox_id',
+        'api_url',
+        'account_id',
+        'cached_emails',
+        'cached_total_count'
+      ]);
     });
 
     it('sets up alarm and clears cached inbox_id when access_token is set or updated', () => {
@@ -212,7 +218,11 @@ describe('Background Worker Lifecycle & Badge Management', () => {
 
       callbacks.storageListener({ access_token: { newValue: 'tok-new' } }, 'local');
 
-      expect(mockStorage.local.remove).toHaveBeenCalledWith(['inbox_id']);
+      expect(mockStorage.local.remove).toHaveBeenCalledWith([
+        'inbox_id',
+        'cached_emails',
+        'cached_total_count'
+      ]);
       expect(mockAlarms.create).toHaveBeenCalledWith(ALARM_NAME, { periodInMinutes: 5 });
     });
   });
@@ -237,7 +247,10 @@ describe('Background Worker Lifecycle & Badge Management', () => {
       });
 
       expect(mockJmap.fetchSession).toHaveBeenCalledWith(true, 'valid-test-token');
-      expect(mockStorage.local.remove).toHaveBeenCalledWith(['inbox_id'], expect.any(Function));
+      expect(mockStorage.local.remove).toHaveBeenCalledWith(
+        ['inbox_id', 'cached_emails', 'cached_total_count'],
+        expect.any(Function)
+      );
       expect(mockStorage.local.set).toHaveBeenCalledWith(
         {
           access_token: 'valid-test-token',
@@ -324,6 +337,33 @@ describe('Background Worker Lifecycle & Badge Management', () => {
       callbacks.contextMenuListener({ menuItemId: 'OTHER_ITEM' });
 
       expect(mockTabs.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('applyUnreadResult', () => {
+    it('caches emails and total count in local storage on successful fetch', () => {
+      const emails = [{ id: 'e1', receivedAt: '2026-09-28T00:00:00Z' }] as any;
+      applyUnreadResult({ emails, totalCount: 42 });
+
+      expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '42' });
+      expect(mockStorage.local.set).toHaveBeenCalledWith({
+        cached_emails: emails,
+        cached_total_count: 42
+      });
+    });
+
+    it('clears badge and removes cache when notAuthenticated is true', () => {
+      applyUnreadResult({ emails: [], notAuthenticated: true });
+
+      expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '' });
+      expect(mockStorage.local.remove).toHaveBeenCalledWith(['cached_emails', 'cached_total_count']);
+    });
+
+    it('does not overwrite cache or badge if error is present', () => {
+      mockStorage.local.set.mockClear();
+      applyUnreadResult({ emails: [], error: 'Network timeout' });
+
+      expect(mockStorage.local.set).not.toHaveBeenCalled();
     });
   });
 });

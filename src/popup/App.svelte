@@ -12,6 +12,7 @@
   import EmailPreview from "../components/EmailPreview.svelte";
 
   let unreadEmails = $state<EmailItem[]>([]);
+  let totalCount = $state<number | undefined>(undefined);
   let isLoading = $state(true);
   let hasInitialized = $state(false);
   let errorMsg = $state("");
@@ -26,14 +27,16 @@
   // Ensures the user notices that his action is happening
   const MIN_LOADING_SPINNER_MS = 300;
 
-  async function fetchEmails() {
-    isLoading = true;
+  async function fetchEmails(isSilentRevalidate = false) {
+    if (!isSilentRevalidate) {
+      isLoading = true;
+    }
     errorMsg = "";
 
     const startTime = Date.now();
     const finishLoading = () => {
       const elapsed = Date.now() - startTime;
-      if (elapsed < MIN_LOADING_SPINNER_MS) {
+      if (elapsed < MIN_LOADING_SPINNER_MS && !isSilentRevalidate) {
         setTimeout(() => (isLoading = false), MIN_LOADING_SPINNER_MS - elapsed);
       } else {
         isLoading = false;
@@ -50,6 +53,10 @@
     } else if (response.emails) {
       isAuthenticated = true;
       unreadEmails = response.emails;
+      totalCount =
+        typeof response.totalCount === "number"
+          ? response.totalCount
+          : response.emails.length;
       if (unreadEmails.length > 0) {
         const stillSelected =
           selectedEmail && unreadEmails.find((e) => e.id === selectedEmail?.id);
@@ -69,17 +76,32 @@
   }
 
   onMount(() => {
-    fetchEmails();
+    // SWR Instant Load: render cached emails immediately (0ms) if available
+    extensionClient.getCachedUnread().then((cached) => {
+      if (cached.emails && cached.emails.length > 0) {
+        unreadEmails = cached.emails;
+        totalCount = cached.totalCount;
+        hasInitialized = true;
+        isLoading = false;
+        selectEmail(cached.emails[0]);
+        // Silently revalidate fresh state in background
+        fetchEmails(true);
+      } else {
+        fetchEmails(false);
+      }
+    }).catch(() => {
+      fetchEmails(false);
+    });
 
     const unsubscribe = extensionClient.onTokenChanged(() => {
-      fetchEmails();
+      fetchEmails(false);
     });
 
     return unsubscribe;
   });
 
   function handleRefresh() {
-    fetchEmails();
+    fetchEmails(false);
   }
 
   function openOptions() {
@@ -137,6 +159,7 @@
     {:else}
       <EmailList
         emails={unreadEmails}
+        {totalCount}
         selectedEmailId={selectedEmail?.id}
         {isLoading}
         {errorMsg}

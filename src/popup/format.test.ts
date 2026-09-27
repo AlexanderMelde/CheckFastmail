@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { formatTime, getInitials, escapeHtml, buildIframeContent } from './format';
+import {
+  formatTime,
+  getInitials,
+  escapeHtml,
+  buildIframeContent,
+  formatListTruncationNotice
+} from './format';
 import type { EmailItem } from '../types';
 
 describe('formatTime', () => {
@@ -172,3 +178,32 @@ describe('buildIframeContent', () => {
     expect(result).toContain('Project Update');
   });
 });
+
+describe('formatListTruncationNotice', () => {
+  it('returns truncation notice when totalCount is greater than displayed count', () => {
+    const notice = formatListTruncationNotice(100, 142);
+    expect(notice).toBe('Only the first 100 of 142 emails are displayed.');
+  });
+
+  it('returns null when totalCount equals displayed count', () => {
+    const notice = formatListTruncationNotice(100, 100);
+    expect(notice).toBeNull();
+  });
+
+  it('returns null when totalCount is less than displayed count', () => {
+    const notice = formatListTruncationNotice(10, 5);
+    expect(notice).toBeNull();
+  });
+
+  it('falls back to limit check when totalCount is undefined', () => {
+    expect(formatListTruncationNotice(100, undefined, 100)).toBe(
+      'Only the first 100 emails are displayed.'
+    );
+    expect(formatListTruncationNotice(99, undefined, 100)).toBeNull();
+  });
+
+  it('returns null when displayed count is 0', () => {
+    expect(formatListTruncationNotice(0, 0)).toBeNull();
+  });
+});
+
