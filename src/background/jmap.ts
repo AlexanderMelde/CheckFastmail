@@ -1,7 +1,6 @@
 // src/background/jmap.ts
-import { refreshToken } from './auth';
 
-const SESSION_URL = 'https://api.fastmail.com/.well-known/jmap';
+const SESSION_URL = 'https://api.fastmail.com/jmap/session';
 
 interface JmapSession {
   apiUrl: string;
@@ -13,10 +12,12 @@ async function getAccessToken(): Promise<string | null> {
   return result.access_token || null;
 }
 
-export async function fetchSession(): Promise<JmapSession | null> {
-  const result = await chrome.storage.local.get(['api_url', 'account_id']);
-  if (result.api_url && result.account_id) {
-    return { apiUrl: result.api_url, accountId: result.account_id };
+export async function fetchSession(forceRefresh: boolean = false): Promise<JmapSession | null> {
+  if (!forceRefresh) {
+    const result = await chrome.storage.local.get(['api_url', 'account_id']);
+    if (result.api_url && result.account_id) {
+      return { apiUrl: result.api_url, accountId: result.account_id };
+    }
   }
 
   const token = await getAccessToken();
@@ -30,10 +31,8 @@ export async function fetchSession(): Promise<JmapSession | null> {
     });
 
     if (response.status === 401) {
-      const newToken = await refreshToken();
-      if (newToken) {
-        return fetchSession(); // Retry with new token
-      }
+      // Invalid or revoked API token
+      await chrome.storage.local.remove(['access_token', 'api_url', 'account_id']);
       return null;
     }
 
@@ -80,7 +79,9 @@ export async function getUnreadEmails(): Promise<{ emails: any[], notAuthenticat
             "Email/query",
             {
               accountId: session.accountId,
-              filter: { unread: true }
+              filter: { notKeyword: "$seen" },
+              sort: [{ property: "receivedAt", isAscending: false }],
+              limit: 30
             },
             "0"
           ]
@@ -89,10 +90,7 @@ export async function getUnreadEmails(): Promise<{ emails: any[], notAuthenticat
     });
 
     if (queryResponse.status === 401) {
-      const newToken = await refreshToken();
-      if (newToken) {
-        return getUnreadEmails(); // Retry with new token
-      }
+      await chrome.storage.local.remove(['access_token', 'api_url', 'account_id']);
       return { emails: [], notAuthenticated: true };
     }
 
@@ -204,10 +202,7 @@ async function performEmailSet(updateParams: any): Promise<boolean> {
     });
 
     if (response.status === 401) {
-      const newToken = await refreshToken();
-      if (newToken) {
-        return performEmailSet(updateParams); // Retry
-      }
+      await chrome.storage.local.remove(['access_token', 'api_url', 'account_id']);
       return false;
     }
 
@@ -220,7 +215,7 @@ async function performEmailSet(updateParams: any): Promise<boolean> {
 
 export async function markEmailRead(emailId: string): Promise<boolean> {
   return performEmailSet({
-    [emailId]: { isUnread: false }
+    [emailId]: { "keywords/$seen": true }
   });
 }
 
@@ -237,4 +232,61 @@ export async function archiveEmail(emailId: string): Promise<boolean> {
   return performEmailSet({
     [emailId]: { [`mailboxIds/${inboxId}`]: null }
   });
+}
+
+export async function fetchEmailBody(emailId: string): Promise<string | null> {
+  const session = await fetchSession();
+  if (!session) return null;
+  const token = await getAccessToken();
+  if (!token) return null;
+
+  try {
+    const response = await fetch(session.apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        using: ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:mail"],
+        methodCalls: [
+          [
+            "Email/get",
+            {
+              accountId: session.accountId,
+              ids: [emailId],
+              properties: ["bodyValues", "htmlBody", "textBody"],
+              fetchTextBodyValues: true,
+              fetchHTMLBodyValues: true
+            },
+            "0"
+          ]
+        ]
+      })
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const email = data.methodResponses[0][1].list[0];
+    if (!email) return null;
+
+    // Try to get HTML body first, fallback to text body
+    let partId = null;
+    if (email.htmlBody && email.htmlBody.length > 0) {
+      partId = email.htmlBody[0].partId;
+    } else if (email.textBody && email.textBody.length > 0) {
+      partId = email.textBody[0].partId;
+    }
+
+    if (partId && email.bodyValues && email.bodyValues[partId]) {
+      return email.bodyValues[partId].value;
+    }
+
+    // DEBUG: Return the raw email object so we can see what's missing
+    return `<pre>Failed to parse body. Raw email object:\n${JSON.stringify(email, null, 2)}</pre>`;
+  } catch (err) {
+    console.error('Error fetching email body:', err);
+    return `<pre>Error fetching: ${err}</pre>`;
+  }
 }
