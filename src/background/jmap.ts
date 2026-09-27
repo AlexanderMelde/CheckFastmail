@@ -65,6 +65,12 @@ export async function getUnreadEmails(): Promise<{ emails: any[], notAuthenticat
   if (!session) return { emails: [], notAuthenticated: true };
 
   try {
+    const inboxId = await getInboxId(session, token);
+    const filter: any = { notKeyword: "$seen" };
+    if (inboxId) {
+      filter.inMailbox = inboxId;
+    }
+
     // Phase 1: Query for unread email IDs
     const queryResponse = await fetch(session.apiUrl, {
       method: 'POST',
@@ -79,7 +85,7 @@ export async function getUnreadEmails(): Promise<{ emails: any[], notAuthenticat
             "Email/query",
             {
               accountId: session.accountId,
-              filter: { notKeyword: "$seen" },
+              filter: filter,
               sort: [{ property: "receivedAt", isAscending: false }],
               limit: 30
             },
@@ -116,7 +122,7 @@ export async function getUnreadEmails(): Promise<{ emails: any[], notAuthenticat
             {
               accountId: session.accountId,
               ids: emailIds,
-              properties: ["id", "threadId", "subject", "from", "receivedAt"]
+              properties: ["id", "threadId", "subject", "from", "receivedAt", "preview"]
             },
             "0"
           ]

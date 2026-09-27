@@ -58,7 +58,8 @@
       <ol class="list-decimal list-inside space-y-1">
         <li>Go to your Fastmail settings: <a href="https://www.fastmail.com/settings/security/tokens" target="_blank" class="text-blue-600 underline">Settings &gt; Security &gt; API Tokens</a></li>
         <li>Click <strong>New API Token</strong></li>
-        <li>Give it a name (e.g. "Extension") and grant <strong>Mail</strong> and <strong>Mail (Drafts/Sent)</strong> permissions.</li>
+        <li>Give it a name (e.g. "Extension") and ensure the <strong>JMAP</strong> protocol is selected.</li>
+        <li>Make sure to grant <strong>Read-only</strong> permissions for Mail.</li>
         <li>Copy the token and paste it below.</li>
       </ol>
     </div>
