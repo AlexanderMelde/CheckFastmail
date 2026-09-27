@@ -69,7 +69,9 @@
   });
 </script>
 
-<div class="flex flex-col min-h-screen font-sans text-[14px] text-slate-700 bg-slate-50">
+<div
+  class="flex flex-col min-h-screen font-sans text-[14px] text-slate-700 bg-slate-50"
+>
   <Header />
 
   <div class="flex flex-1 min-h-0">
@@ -107,7 +109,7 @@
 
     <!-- Main Content -->
     <main class="flex-1 py-8 px-10 overflow-y-auto max-w-[720px]">
-      <h1 class="text-[20px] font-semibold text-slate-900 m-0 mb-5">
+      <h1 class="text-[19px] font-bold text-slate-900 leading-6 m-0 mb-5">
         Connection
       </h1>
 
@@ -243,7 +245,9 @@
         </button>
       {/if}
 
-      <div class="mt-8 pt-5 border-t border-slate-200 text-[13px] text-slate-400">
+      <div
+        class="mt-8 pt-5 border-t border-slate-200 text-[13px] text-slate-400"
+      >
         <p class="m-0">
           Your API token is securely stored locally in your browser and is never
           transmitted to any third party.
