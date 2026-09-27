@@ -73,3 +73,5 @@ export const ALL_AUTH_KEYS = [
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
 
+export type OptionsTab = 'connection' | 'privacy' | 'terms' | 'imprint';
+
