@@ -1,6 +1,9 @@
 import type { EmailItem, JmapSession, FetchEmailBodyResponse, FetchUnreadResponse, EmailDetail } from '../types';
 
 const SESSION_URL = 'https://api.fastmail.com/jmap/session';
+export const HTTP_STATUS_UNAUTHORIZED = 401;
+export const UNREAD_EMAILS_LIMIT = 30;
+export const MAX_BODY_VALUE_BYTES = 1048576; // 1 MB per RFC 8621 §4.1.4
 
 async function getAccessToken(): Promise<string | null> {
   const result = (await chrome.storage.local.get(['access_token'])) || {};
@@ -32,7 +35,7 @@ export async function fetchSession(forceRefresh = false, tokenOverride?: string)
       }
     });
 
-    if (response.status === 401) {
+    if (response.status === HTTP_STATUS_UNAUTHORIZED) {
       if (!isTestingToken) {
         await clearSession();
       }
@@ -102,7 +105,7 @@ export async function getInboxId(session: JmapSession, token: string): Promise<s
       })
     });
 
-    if (response.status === 401) {
+    if (response.status === HTTP_STATUS_UNAUTHORIZED) {
       await clearSession();
       return null;
     }
@@ -153,7 +156,7 @@ export async function getUnreadEmails(): Promise<FetchUnreadResponse> {
               accountId: session.accountId,
               filter,
               sort: [{ property: 'receivedAt', isAscending: false }],
-              limit: 30
+              limit: UNREAD_EMAILS_LIMIT
             },
             'q'
           ],
@@ -174,7 +177,7 @@ export async function getUnreadEmails(): Promise<FetchUnreadResponse> {
       })
     });
 
-    if (response.status === 401) {
+    if (response.status === HTTP_STATUS_UNAUTHORIZED) {
       await clearSession();
       return { emails: [], notAuthenticated: true };
     }
@@ -265,7 +268,7 @@ export async function fetchEmailBody(emailId: string): Promise<FetchEmailBodyRes
               properties: ['bodyValues', 'htmlBody', 'textBody', 'preview'],
               fetchTextBodyValues: true,
               fetchHTMLBodyValues: true,
-              maxBodyValueBytes: 1048576
+              maxBodyValueBytes: MAX_BODY_VALUE_BYTES
             },
             '0'
           ]
@@ -273,7 +276,7 @@ export async function fetchEmailBody(emailId: string): Promise<FetchEmailBodyRes
       })
     });
 
-    if (response.status === 401) {
+    if (response.status === HTTP_STATUS_UNAUTHORIZED) {
       await clearSession();
       return { body: null, error: 'Authentication expired' };
     }

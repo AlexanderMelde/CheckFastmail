@@ -2,6 +2,34 @@ import { getUnreadEmails, fetchSession, fetchEmailBody, clearSession } from './j
 import type { MessageRequest } from '../types';
 
 export const ALARM_NAME = 'POLL_FASTMAIL';
+export const POLL_INTERVAL_MINUTES = 5;
+export const BADGE_COLOR = '#2563eb'; // Fastmail Blue
+export const CONTEXT_MENU_OPEN_FASTMAIL = 'OPEN_FASTMAIL';
+export const FASTMAIL_WEB_URL = 'https://app.fastmail.com/mail/';
+
+export function setupContextMenu(): void {
+  if (typeof chrome.contextMenus?.removeAll === 'function') {
+    chrome.contextMenus.removeAll(() => {
+      chrome.contextMenus.create({
+        id: CONTEXT_MENU_OPEN_FASTMAIL,
+        title: 'Open Fastmail',
+        contexts: ['action']
+      });
+    });
+  }
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  setupContextMenu();
+});
+
+if (typeof chrome.contextMenus?.onClicked?.addListener === 'function') {
+  chrome.contextMenus.onClicked.addListener((info) => {
+    if (info.menuItemId === CONTEXT_MENU_OPEN_FASTMAIL) {
+      chrome.tabs.create({ url: FASTMAIL_WEB_URL });
+    }
+  });
+}
 
 // Listen for messages from popup or options UI
 chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResponse) => {
@@ -82,7 +110,7 @@ chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResp
 export async function updateBadgeCount(count: number): Promise<void> {
   if (count > 0) {
     await chrome.action.setBadgeText({ text: count.toString() });
-    await chrome.action.setBadgeBackgroundColor({ color: '#2563eb' }); // Fastmail Blue
+    await chrome.action.setBadgeBackgroundColor({ color: BADGE_COLOR });
   } else {
     await chrome.action.setBadgeText({ text: '' });
   }
@@ -102,11 +130,11 @@ export function setupAlarm(): void {
   if (typeof chrome.alarms?.get === 'function') {
     chrome.alarms.get(ALARM_NAME, (alarm) => {
       if (!alarm) {
-        chrome.alarms.create(ALARM_NAME, { periodInMinutes: 5 });
+        chrome.alarms.create(ALARM_NAME, { periodInMinutes: POLL_INTERVAL_MINUTES });
       }
     });
   } else {
-    chrome.alarms.create(ALARM_NAME, { periodInMinutes: 5 });
+    chrome.alarms.create(ALARM_NAME, { periodInMinutes: POLL_INTERVAL_MINUTES });
   }
 }
 

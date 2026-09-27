@@ -19,6 +19,8 @@
   let isPlainText = $state(false);
   let isLoadingBody = $state(false);
 
+  const MIN_LOADING_SPINNER_MS = 300;
+
   function fetchEmails() {
     isLoading = true;
     errorMsg = "";
@@ -27,8 +29,8 @@
     const startTime = Date.now();
     const finishLoading = () => {
       const elapsed = Date.now() - startTime;
-      if (elapsed < 300) {
-        setTimeout(() => (isLoading = false), 500 - elapsed);
+      if (elapsed < MIN_LOADING_SPINNER_MS) {
+        setTimeout(() => (isLoading = false), MIN_LOADING_SPINNER_MS - elapsed);
       } else {
         isLoading = false;
       }
@@ -50,10 +52,14 @@
           errorMsg = response.error;
         } else if (response && response.emails) {
           unreadEmails = response.emails;
-          if (
-            selectedEmail &&
-            !unreadEmails.find((e) => e.id === selectedEmail?.id)
-          ) {
+          if (unreadEmails.length > 0) {
+            const stillSelected =
+              selectedEmail &&
+              unreadEmails.find((e) => e.id === selectedEmail?.id);
+            if (!stillSelected) {
+              selectEmail(unreadEmails[0]);
+            }
+          } else {
             selectedEmail = null;
             emailBody = null;
             emailBodyError = false;
@@ -96,8 +102,7 @@
   function selectEmail(email: EmailItem) {
     if (selectedEmail?.id === email.id && emailBody !== null && !emailBodyError)
       return;
-    if (selectedEmail?.id === email.id && isLoadingBody)
-      return;
+    if (selectedEmail?.id === email.id && isLoadingBody) return;
 
     selectedEmail = email;
     emailBody = null;
@@ -383,24 +388,31 @@
         </div>
       {:else}
         <div
-          class="flex flex-col items-center justify-center h-full text-slate-400 p-8 text-center bg-slate-50/50"
+          class="flex flex-col items-center justify-center h-full text-center p-8 bg-[#fdfcfd]"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-16 w-16 mb-4 opacity-30 text-[#8b45f3]"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+          <div
+            class="w-16 h-16 rounded-full bg-purple-50 flex items-center justify-center mb-4 text-[#7934a3] shadow-sm"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.2"
-              d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76"
-            />
-          </svg>
-          <p class="font-medium text-lg text-slate-500">
-            Select an email to read
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-8 h-8"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.75"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <h2 class="text-base font-semibold text-slate-800 mb-1">
+            Inbox Zero
+          </h2>
+          <p class="text-sm text-slate-500 max-w-[240px]">
+            You're all caught up! No unread messages in your inbox.
           </p>
         </div>
       {/if}

@@ -23,13 +23,15 @@ export function formatTime(dateString: string): string {
   return isCurrentYear ? dateFormatter.format(d) : yearDateFormatter.format(d);
 }
 
+const INITIALS_FALLBACK_LENGTH = 2;
+
 export function getInitials(name?: string): string {
   if (!name) return '?';
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length >= 2) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
-  return (name.trim().substring(0, 2) || '?').toUpperCase();
+  return (name.trim().substring(0, INITIALS_FALLBACK_LENGTH) || '?').toUpperCase();
 }
 
 export function escapeHtml(str?: string): string {

@@ -15,13 +15,34 @@ const mockAlarms = vi.hoisted(() => ({
 
 const callbacks = vi.hoisted(() => ({
   storageListener: null as any,
-  messageListener: null as any
+  messageListener: null as any,
+  contextMenuListener: null as any,
+  onInstalledListener: null as any
+}));
+
+const mockContextMenus = vi.hoisted(() => ({
+  create: vi.fn(),
+  removeAll: vi.fn((cb) => cb?.()),
+  onClicked: {
+    addListener: vi.fn((cb) => {
+      callbacks.contextMenuListener = cb;
+    })
+  }
+}));
+
+const mockTabs = vi.hoisted(() => ({
+  create: vi.fn()
 }));
 
 const mockRuntime = vi.hoisted(() => ({
   onMessage: {
     addListener: vi.fn((cb) => {
       callbacks.messageListener = cb;
+    })
+  },
+  onInstalled: {
+    addListener: vi.fn((cb) => {
+      callbacks.onInstalledListener = cb;
     })
   }
 }));
@@ -59,8 +80,10 @@ vi.hoisted(() => {
   globalThis.chrome = {
     action: mockAction,
     alarms: mockAlarms,
+    contextMenus: mockContextMenus,
     runtime: mockRuntime,
-    storage: mockStorage
+    storage: mockStorage,
+    tabs: mockTabs
   } as any;
 });
 
@@ -237,6 +260,38 @@ describe('Background Worker Lifecycle & Badge Management', () => {
       });
 
       expect(mockJmap.fetchEmailBody).toHaveBeenCalledWith('msg-valid');
+    });
+  });
+
+  describe('Right-Click Context Menu ("Open Fastmail")', () => {
+    it('sets up "Open Fastmail" context menu with contexts: ["action"]', () => {
+      mockContextMenus.create.mockClear();
+      mockContextMenus.removeAll.mockClear();
+
+      callbacks.onInstalledListener?.();
+
+      expect(mockContextMenus.removeAll).toHaveBeenCalled();
+      expect(mockContextMenus.create).toHaveBeenCalledWith({
+        id: 'OPEN_FASTMAIL',
+        title: 'Open Fastmail',
+        contexts: ['action']
+      });
+    });
+
+    it('opens Fastmail web interface in new tab when context menu item is clicked', () => {
+      expect(callbacks.contextMenuListener).toBeDefined();
+
+      callbacks.contextMenuListener({ menuItemId: 'OPEN_FASTMAIL' });
+
+      expect(mockTabs.create).toHaveBeenCalledWith({ url: 'https://app.fastmail.com/mail/' });
+    });
+
+    it('ignores clicks from unrecognized context menu items', () => {
+      mockTabs.create.mockClear();
+
+      callbacks.contextMenuListener({ menuItemId: 'OTHER_ITEM' });
+
+      expect(mockTabs.create).not.toHaveBeenCalled();
     });
   });
 });
