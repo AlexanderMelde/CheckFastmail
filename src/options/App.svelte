@@ -259,9 +259,9 @@
 
 <style>
   .nav-item-active {
-    background: #f0ebf8;
-    color: #6d28a8;
-    font-weight: 600;
+    background: rgba(36, 57, 89, 0.15);
+    color: #1b1e20;
+    font-weight: 700;
   }
   .token-input:focus {
     border-color: #8b45f3;
