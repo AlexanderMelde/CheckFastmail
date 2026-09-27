@@ -120,7 +120,10 @@ export async function getInboxId(session: JmapSession, token: string): Promise<s
     if (!response.ok) return null;
 
     const data = await response.json();
-    const inboxId = data.methodResponses?.[0]?.[1]?.ids?.[0];
+    const mbResponse = data.methodResponses?.find(
+      ([name, _res, id]: [string, unknown, string]) => name === 'Mailbox/query' && id === '0'
+    );
+    const inboxId = (mbResponse?.[1] as { ids?: string[] })?.ids?.[0];
 
     if (inboxId) {
       await chrome.storage.local.set({ [STORAGE_KEYS.INBOX_ID]: inboxId });
@@ -132,12 +135,23 @@ export async function getInboxId(session: JmapSession, token: string): Promise<s
   return null;
 }
 
-export async function getUnreadEmails(): Promise<FetchUnreadResponse> {
-  const token = await getAccessToken();
-  if (!token) return { emails: [], notAuthenticated: true };
+let inFlightGetUnreadEmails: Promise<FetchUnreadResponse> | null = null;
 
-  const session = await fetchSession();
-  if (!session) return { emails: [], notAuthenticated: true };
+export async function getUnreadEmails(): Promise<FetchUnreadResponse> {
+  if (inFlightGetUnreadEmails) return inFlightGetUnreadEmails;
+
+  inFlightGetUnreadEmails = (async () => {
+    const token = await getAccessToken();
+    if (!token) return { emails: [], notAuthenticated: true };
+
+    const session = await fetchSession();
+    if (!session) {
+      const stillHasToken = await getAccessToken();
+      if (stillHasToken) {
+        return { emails: [], error: 'Could not connect to Fastmail' };
+      }
+      return { emails: [], notAuthenticated: true };
+    }
 
   try {
     const inboxId = await getInboxId(session, token);
@@ -220,6 +234,11 @@ export async function getUnreadEmails(): Promise<FetchUnreadResponse> {
     const message = err instanceof Error ? err.message : 'Network error';
     return { emails: [], error: `Network error: ${message}` };
   }
+  })().finally(() => {
+    inFlightGetUnreadEmails = null;
+  });
+
+  return inFlightGetUnreadEmails;
 }
 
 export function extractBodyFromEmail(email: EmailDetail | null | undefined): { content: string; isPlainText: boolean } | null {
@@ -257,7 +276,10 @@ export async function fetchEmailBody(emailId: string): Promise<FetchEmailBodyRes
   const token = await getAccessToken();
   if (!token) return { body: null, error: 'Not authenticated' };
   const session = await fetchSession();
-  if (!session) return { body: null, error: 'Not authenticated' };
+  if (!session) {
+    const stillHasToken = await getAccessToken();
+    return { body: null, error: stillHasToken ? 'Could not connect to Fastmail' : 'Not authenticated' };
+  }
 
   try {
     const response = await fetch(session.apiUrl, {

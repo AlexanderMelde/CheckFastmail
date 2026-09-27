@@ -149,6 +149,7 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
   const headTagMatch = renderedBody.match(/<head[^>]*>/i);
   const bodyTagMatch = renderedBody.match(/<body[^>]*>/i);
 
+  // Intentionally injecting headerHtml inside the sandboxed iframe to allow the header to scroll seamlessly along with long email bodies
   if (headTagMatch && bodyTagMatch) {
     renderedBody = renderedBody.replace(headTagMatch[0], () => headTagMatch[0] + securityHead);
     return renderedBody.replace(bodyTagMatch[0], () => bodyTagMatch[0] + trackerFixStyle + headerHtml);
@@ -165,6 +166,8 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
     if (closeHeadMatch) {
       return renderedBody.replace(closeHeadMatch[0], () => closeHeadMatch[0] + trackerFixStyle + headerHtml);
     }
+    // If unclosed head tag exists without body tag, inject header directly after head
+    return renderedBody.replace(headTagMatch[0] + securityHead, () => headTagMatch[0] + securityHead + trackerFixStyle + headerHtml);
   }
 
   return securityHead + trackerFixStyle + headerHtml + renderedBody;

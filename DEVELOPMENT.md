@@ -18,6 +18,7 @@ Stop at the first rung that holds:
 ## 2. Security & Lifecycle Invariants
 
 - **Minimal Privileges (MV3):** Strictly following manifest.json. Never request broad scopes (`<all_urls>`, `tabs`, `cookies`).
+- **Zero Host Permissions:** `host_permissions` is intentionally omitted from `manifest.json`. Fastmail's JMAP API implements RFC 8620 §2.1 with open CORS support (`Access-Control-Allow-Origin: *`). Omitting `host_permissions` provides a cleaner, warning-free installation prompt in the Chrome Web Store without compromising communication with Fastmail.
 - **Token Isolation:** Tokens stored exclusively in `chrome.storage.local` (never `sync`). Verified in-memory via JMAP session endpoint before saving. Wiped immediately on `401 Unauthorized` or disconnect via `clearSession()`.
 - **Iframe Sandbox & CSP:** Email bodies render in `<iframe sandbox="allow-popups allow-popups-to-escape-sandbox">`. Never permit `allow-scripts` or `allow-same-origin`. Enforce `default-src 'none'; img-src https: data:; style-src 'unsafe-inline';`. Inject `<base target="_blank">` to isolate link clicks.
 - **Escape Metadata:** Always pass dynamic header fields (`subject`, `from`, `to`, `date`) through `escapeHtml()`. Avoid string replacement tokens (`$&`, `$'`) by using function replacers in `String.prototype.replace`.

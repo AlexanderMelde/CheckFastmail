@@ -161,4 +161,14 @@ describe('buildIframeContent', () => {
     expect(result).toContain('Project Update');
     expect(result).toContain('<div>No body tag</div>');
   });
+
+  it('handles malformed HTML with unclosed head tag without duplicating CSP or base tag', () => {
+    const unclosedHeadHtml = '<html><head><p>Snippet with unclosed head</p></html>';
+    const result = buildIframeContent(sampleEmail, unclosedHeadHtml);
+    expect(result).toContain('Content-Security-Policy');
+    // Ensure securityHead was not injected twice
+    const occurrences = (result.match(/Content-Security-Policy/g) || []).length;
+    expect(occurrences).toBe(1);
+    expect(result).toContain('Project Update');
+  });
 });

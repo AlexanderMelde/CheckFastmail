@@ -55,33 +55,11 @@
       {/each}
     </div>
   {:else if emails.length === 0}
-    {#if !errorMsg}
-      <div
-        class="flex flex-col items-center justify-center h-full p-4 text-center text-slate-400"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-10 w-10 mb-2 opacity-30"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.5"
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-        <p>Inbox zero!</p>
-      </div>
-    {:else}
-      <div
-        class="flex flex-col items-center justify-center h-full p-4 text-center text-slate-400"
-      >
-        <p class="text-sm">Unable to load messages.</p>
-      </div>
-    {/if}
+    <div
+      class="flex flex-col items-center justify-center h-full p-4 text-center text-slate-400"
+    >
+      <p class="text-sm">No messages</p>
+    </div>
   {:else}
     <ul class="flex-1">
       {#each emails as email (email.id)}

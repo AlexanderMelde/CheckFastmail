@@ -7,6 +7,7 @@
   import SettingsButton from "../components/SettingsButton.svelte";
   import ConnectPrompt from "../components/ConnectPrompt.svelte";
   import InitialLoading from "../components/InitialLoading.svelte";
+  import InboxZero from "../components/InboxZero.svelte";
   import EmailList from "../components/EmailList.svelte";
   import EmailPreview from "../components/EmailPreview.svelte";
 
@@ -85,11 +86,14 @@
     extensionClient.openOptionsPage();
   }
 
+  let selectionSequenceId = 0;
+
   async function selectEmail(email: EmailItem) {
     if (selectedEmail?.id === email.id && emailBody !== null && !emailBodyError)
       return;
     if (selectedEmail?.id === email.id && isLoadingBody) return;
 
+    const requestId = ++selectionSequenceId;
     selectedEmail = email;
     emailBody = null;
     emailBodyError = false;
@@ -98,7 +102,7 @@
 
     const response = await extensionClient.fetchEmailBody(email.id);
 
-    if (selectedEmail && selectedEmail.id === email.id) {
+    if (requestId === selectionSequenceId) {
       isLoadingBody = false;
       if (response && response.body !== null) {
         emailBody = response.body;
@@ -128,6 +132,8 @@
       <ConnectPrompt onconnect={openOptions} />
     {:else if !hasInitialized && isLoading}
       <InitialLoading />
+    {:else if unreadEmails.length === 0}
+      <InboxZero {errorMsg} onretry={handleRefresh} />
     {:else}
       <EmailList
         emails={unreadEmails}

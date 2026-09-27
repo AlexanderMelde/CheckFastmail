@@ -12,6 +12,7 @@
   let errorMsg = $state("");
 
   async function handleSave() {
+    if (isSaving) return;
     if (!apiToken.trim()) {
       errorMsg = "Please enter an API token";
       return;

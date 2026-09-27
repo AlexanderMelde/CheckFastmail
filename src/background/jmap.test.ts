@@ -365,6 +365,22 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       expect(inboxId).toBeNull();
       expect(mockStorage.access_token).toBeUndefined();
     });
+
+    it('correctly extracts inboxId when methodResponses contains preceding responses or is reordered', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          methodResponses: [
+            ['notice', { message: 'maintenance soon' }, 'notice-1'],
+            ['Mailbox/query', { ids: ['inbox-reordered-789'] }, '0']
+          ]
+        })
+      } as Response);
+
+      const inboxId = await getInboxId(session, 'tok-123');
+      expect(inboxId).toBe('inbox-reordered-789');
+    });
   });
 
   describe('getUnreadEmails (Single Round-Trip RFC 8620 §3.7 Back-Reference)', () => {
@@ -474,6 +490,22 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       const result = await getUnreadEmails();
       expect(result).toEqual({ emails: [], notAuthenticated: true });
       expect(mockStorage.access_token).toBeUndefined();
+    });
+
+    it('returns error and preserves auth state when session discovery fails due to network dropout', async () => {
+      mockStorage = {
+        access_token: 'valid-token'
+        // No cached api_url or account_id, forcing fetchSession to hit network
+      };
+
+      vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Connection timed out'));
+
+      const result = await getUnreadEmails();
+      expect(result.emails).toEqual([]);
+      expect(result.notAuthenticated).toBeUndefined();
+      expect(result.error).toBe('Could not connect to Fastmail');
+      // Token must NOT be wiped from storage!
+      expect(mockStorage.access_token).toBe('valid-token');
     });
 
     it('surfaces HTTP server error without masking as empty inbox', async () => {
@@ -647,6 +679,39 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
         })
       );
     });
+
+    it('deduplicates concurrent getUnreadEmails calls into a single in-flight request', async () => {
+      mockStorage = {
+        access_token: 'tok-123',
+        api_url: 'https://api.fastmail.com/jmap/api',
+        account_id: 'acc-1',
+        inbox_id: 'inbox-1'
+      };
+
+      let resolveFetch!: (val: any) => void;
+      const delayedFetch = new Promise<any>((res) => {
+        resolveFetch = res;
+      });
+
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementationOnce(() => delayedFetch);
+
+      const promise1 = getUnreadEmails();
+      const promise2 = getUnreadEmails();
+
+      resolveFetch({
+        ok: true,
+        status: 200,
+        json: async () => ({ methodResponses: [['Email/get', { list: [{ id: 'dedup-1' }] }, 'g']] })
+      });
+
+      const [res1, res2] = await Promise.all([promise1, promise2]);
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(res1.emails).toHaveLength(1);
+      expect(res2.emails).toHaveLength(1);
+      expect(res1.emails[0].id).toBe('dedup-1');
+      expect(res2.emails[0].id).toBe('dedup-1');
+    });
   });
 
   describe('fetchEmailBody', () => {
@@ -730,6 +795,19 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       const result = await fetchEmailBody('msg-123');
       expect(result).toEqual({ body: null, error: 'Authentication expired' });
       expect(mockStorage.access_token).toBeUndefined();
+    });
+
+    it('surfaces connection error without wiping credentials when session discovery encounters network error', async () => {
+      mockStorage = {
+        access_token: 'valid-token'
+        // No cached api_url or account_id
+      };
+
+      vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Network offline'));
+
+      const result = await fetchEmailBody('msg-123');
+      expect(result).toEqual({ body: null, error: 'Could not connect to Fastmail' });
+      expect(mockStorage.access_token).toBe('valid-token');
     });
 
     it('rejects invalid or empty emailId without executing network fetch', async () => {
