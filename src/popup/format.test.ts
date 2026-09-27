@@ -97,4 +97,9 @@ describe('buildIframeContent', () => {
     expect(result).toContain('Project Update');
     expect(result).toContain('<p>Content</p>');
   });
+
+  it('renders both name and email for recipients in header', () => {
+    const result = buildIframeContent(sampleEmail, '<p>Test</p>');
+    expect(result).toContain('to Bob Jones &lt;bob@example.com&gt;');
+  });
 });

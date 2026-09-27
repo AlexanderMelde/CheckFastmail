@@ -70,6 +70,7 @@
   }
 
   function selectEmail(email: EmailItem) {
+    if (selectedEmail?.id === email.id && emailBody !== null) return;
     selectedEmail = email;
     emailBody = null;
     isPlainText = false;
@@ -240,7 +241,7 @@
               <button
                 type="button"
                 onclick={() => selectEmail(email)}
-                class="w-full text-left flex p-3 pr-4 gap-3 items-start outline-none cursor-pointer bg-transparent border-none"
+                class="w-full text-left flex p-3 pr-4 gap-3 items-start outline-none focus-visible:ring-2 focus-visible:ring-[#8b45f3] focus-visible:ring-inset cursor-pointer bg-transparent border-none"
               >
                 <!-- Content -->
                 <div class="flex-1 min-w-0 font-sans">

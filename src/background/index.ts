@@ -5,6 +5,8 @@ export const ALARM_NAME = 'POLL_FASTMAIL';
 
 // Listen for messages from popup or options UI
 chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResponse) => {
+  if (!message || typeof message.type !== 'string') return;
+
   if (message.type === 'TEST_AND_SAVE_TOKEN') {
     const token = message.token?.trim();
     if (!token) {

@@ -38,9 +38,17 @@ export function escapeHtml(str?: string): string {
 
 export function buildIframeContent(email: EmailItem, bodyContent: string, isPlainText = false): string {
   const subject = email.subject || '(No Subject)';
-  const fromNameOnly = email.from?.[0]?.name || email.from?.[0]?.email || 'Unknown';
-  const fromEmailOnly = email.from?.[0]?.name && email.from?.[0]?.email ? `<${email.from[0].email}>` : '';
-  const toNameOnly = email.to?.[0]?.name || email.to?.[0]?.email || 'you';
+  const rawFromName = email.from?.[0]?.name;
+  const rawFromEmail = email.from?.[0]?.email;
+  const fromNameOnly = rawFromName || rawFromEmail || 'Unknown';
+  const fromEmailOnly = rawFromName && rawFromEmail && rawFromName !== rawFromEmail ? `<${rawFromEmail}>` : '';
+  const toFormatted =
+    Array.isArray(email.to) && email.to.length > 0
+      ? email.to
+          .map((t) => (t.name && t.email && t.name !== t.email ? `${t.name} <${t.email}>` : t.name || t.email || ''))
+          .filter(Boolean)
+          .join(', ') || 'you'
+      : 'you';
   const initials = getInitials(email.from?.[0]?.name || email.from?.[0]?.email);
 
   const receivedDate = new Date(email.receivedAt);
@@ -102,13 +110,13 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
                 ? `<span title="${escapeHtml(email.from?.[0]?.email)}" style="all: initial !important; font-family: inherit !important; font-size: 14px !important; color: #94a3b8 !important; height: 20px !important; line-height: 20px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; flex-shrink: 1 !important;">${escapeHtml(fromEmailOnly)}</span>`
                 : ''
             }
-            <span style="all: initial !important; font-family: inherit !important; font-size: 14px !important; color: #1e293b !important; height: 20px !important; line-height: 20px !important; white-space: nowrap !important; flex-shrink: 0 !important;">
+            <span style="all: initial !important; font-family: inherit !important; font-size: 14px !important; color: #1e293b !important; height: 20px !important; line-height: 20px !important; white-space: nowrap !important; flex-shrink: 0 !important; margin-left: auto !important;">
               ${escapeHtml(dateFormatted)}
             </span>
           </div>
           <div style="all: initial !important; display: flex !important; box-sizing: border-box !important; font-family: inherit !important; margin: 0 !important; padding: 0 !important; gap: 6px !important;">
-            <span style="all: initial !important; font-family: inherit !important; font-size: 13px !important; color: #64748b !important; height: 20px !important; line-height: 20px !important; white-space: nowrap !important;">
-              to ${escapeHtml(toNameOnly)}
+            <span style="all: initial !important; font-family: inherit !important; font-size: 13px !important; color: #64748b !important; height: 20px !important; line-height: 20px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important;">
+              to ${escapeHtml(toFormatted)}
             </span>
           </div>
         </div>

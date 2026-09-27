@@ -39,3 +39,20 @@ export interface FetchEmailBodyResponse {
   error?: string;
 }
 
+export interface EmailBodyPart {
+  partId?: string;
+  type?: string;
+}
+
+export interface EmailBodyValue {
+  value?: string;
+  isTruncated?: boolean;
+}
+
+export interface EmailDetail {
+  id?: string;
+  htmlBody?: EmailBodyPart[];
+  textBody?: EmailBodyPart[];
+  bodyValues?: Record<string, EmailBodyValue>;
+}
+

@@ -1,4 +1,4 @@
-import type { EmailItem, JmapSession, FetchEmailBodyResponse, FetchUnreadResponse } from '../types';
+import type { EmailItem, JmapSession, FetchEmailBodyResponse, FetchUnreadResponse, EmailDetail } from '../types';
 
 const SESSION_URL = 'https://api.fastmail.com/jmap/session';
 
@@ -209,14 +209,14 @@ export async function getUnreadEmails(): Promise<FetchUnreadResponse> {
   }
 }
 
-export function extractBodyFromEmail(email: any): { content: string; isPlainText: boolean } | null {
+export function extractBodyFromEmail(email: EmailDetail | null | undefined): { content: string; isPlainText: boolean } | null {
   if (!email || !email.bodyValues) return null;
 
   // RFC 8621 §4.1.4: Concatenate body parts in order to reconstruct the message content
   if (Array.isArray(email.htmlBody) && email.htmlBody.length > 0) {
     const parts = email.htmlBody
-      .map((part: any) => (part?.partId ? email.bodyValues[part.partId]?.value : ''))
-      .filter((v: any) => typeof v === 'string' && v.length > 0);
+      .map((part) => (part?.partId ? email.bodyValues?.[part.partId]?.value : ''))
+      .filter((v): v is string => typeof v === 'string' && v.length > 0);
     if (parts.length > 0) {
       return { content: parts.join(''), isPlainText: false };
     }
@@ -225,8 +225,8 @@ export function extractBodyFromEmail(email: any): { content: string; isPlainText
   // Fallback to plain text body parts
   if (Array.isArray(email.textBody) && email.textBody.length > 0) {
     const parts = email.textBody
-      .map((part: any) => (part?.partId ? email.bodyValues[part.partId]?.value : ''))
-      .filter((v: any) => typeof v === 'string' && v.length > 0);
+      .map((part) => (part?.partId ? email.bodyValues?.[part.partId]?.value : ''))
+      .filter((v): v is string => typeof v === 'string' && v.length > 0);
     if (parts.length > 0) {
       return { content: parts.join(''), isPlainText: true };
     }
