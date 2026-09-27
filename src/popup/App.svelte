@@ -112,8 +112,17 @@
   }
 
   function formatTime(dateString: string) {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const d = new Date(dateString);
+    const today = new Date();
+    const isToday = d.getDate() === today.getDate() &&
+                    d.getMonth() === today.getMonth() &&
+                    d.getFullYear() === today.getFullYear();
+                    
+    if (isToday) {
+      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    } else {
+      return d.toLocaleDateString([], { month: "short", day: "numeric" });
+    }
   }
 
   function getInitials(name: string) {
@@ -142,7 +151,7 @@
     const headerHtml = `
       <style>
         .ext-open-btn {
-          all: initial !important; box-sizing: border-box !important; position: absolute !important; top: 16px !important; right: 20px !important; display: inline-flex !important; padding: 6px !important; background: transparent !important; color: #47515a !important; border-radius: 6px !important; text-decoration: none !important; cursor: pointer !important; transition: all 0.15s ease !important; height: 28px !important; width: 28px !important; align-items: center !important; justify-content: center !important; margin: 0 !important;
+          all: initial !important; box-sizing: border-box !important; position: absolute !important; top: 9px !important; right: 18px !important; display: inline-flex !important; padding: 6px !important; background: transparent !important; color: #47515a !important; border-radius: 6px !important; text-decoration: none !important; cursor: pointer !important; transition: all 0.15s ease !important; height: 28px !important; width: 28px !important; align-items: center !important; justify-content: center !important; margin: 0 !important;
         }
         .ext-open-btn:hover {
           background: rgba(51, 62, 72, .05) !important; color: #2d3236 !important;
@@ -153,12 +162,27 @@
         .ext-open-btn svg {
           width: 17px !important; height: 17px !important; display: block !important; margin: 0 !important; padding: 0 !important;
         }
+        
+        /* Custom scrollbar to match the list pane */
+        ::-webkit-scrollbar {
+          width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+          background-color: #cbd5e1;
+          border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background-color: #94a3b8;
+        }
       </style>
-      <div style="all: initial !important; display: block !important; box-sizing: border-box !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; padding: 16px 20px !important; border-bottom: 1px solid #e2e8f0 !important; background: #fff !important; position: relative !important; margin: 0 0 16px 0 !important; height: auto !important; max-height: none !important; min-height: 0 !important;">
+      <div style="all: initial !important; display: block !important; box-sizing: border-box !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; padding: 9px 18px !important; border-bottom: 1px solid #e2e8f0 !important; background: #fff !important; position: relative !important; margin: 0 !important; height: auto !important; max-height: none !important; min-height: 0 !important;">
         <a href="${openUrl}" target="_blank" rel="noopener noreferrer" title="Open in Fastmail" class="ext-open-btn">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
         </a>
-        <h2 style="all: initial !important; display: block !important; box-sizing: border-box !important; color: #1e293b !important; margin: 0 0 16px 0 !important; padding: 0 40px 0 0 !important; font-family: 'Proxima Nova', system-ui, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', -apple-system, Arial, sans-serif !important; font-feature-settings: normal !important; font-kerning: auto !important; font-language-override: normal !important; font-optical-sizing: auto !important; font-size: 17.7188px !important; font-weight: 700 !important; line-height: 24px !important; height: auto !important; max-height: none !important; min-height: 0 !important; text-align: left !important;">
+        <h2 style="all: initial !important; display: block !important; box-sizing: border-box !important; color: #1e293b !important; margin: 0 0 12px 0 !important; padding: 0 40px 0 0 !important; font-family: 'Proxima Nova', system-ui, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', -apple-system, Arial, sans-serif !important; font-feature-settings: normal !important; font-kerning: auto !important; font-language-override: normal !important; font-optical-sizing: auto !important; font-size: 17.7188px !important; font-weight: 700 !important; line-height: 24px !important; height: auto !important; max-height: none !important; min-height: 0 !important; text-align: left !important;">
           ${escapeHtml(subject)}
         </h2>
         <div style="all: initial !important; display: flex !important; box-sizing: border-box !important; align-items: center !important; gap: 16px !important; font-family: inherit !important; margin: 0 !important; padding: 0 !important; height: auto !important; flex-direction: row !important;">
@@ -212,13 +236,13 @@
       <button
         onclick={handleRefresh}
         disabled={isLoading}
-        class="p-1.5 bg-white/15 hover:bg-white/25 rounded transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-50"
+        class="w-[28px] h-[28px] flex items-center justify-center bg-transparent hover:bg-white/10 active:bg-white/20 rounded-[6px] transition-all duration-150 ease-in-out focus:outline-none disabled:opacity-50 cursor-pointer text-white"
         title="Refresh Unread"
         aria-label="Refresh"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="h-4 w-4 {isLoading ? 'animate-[spin_1s_linear_infinite]' : ''}"
+          class="w-[17px] h-[17px] {isLoading ? 'animate-[spin_1s_linear_infinite]' : ''}"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -226,7 +250,7 @@
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
-            stroke-width="2"
+            stroke-width="1.75"
             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
           />
         </svg>
