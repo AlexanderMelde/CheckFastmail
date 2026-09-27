@@ -8,9 +8,6 @@
     "alarms",
     "contextMenus"
   ],
-  "host_permissions": [
-    "https://api.fastmail.com/*"
-  ],
   "icons": {
     "16": "icon-16.png",
     "48": "icon-48.png",

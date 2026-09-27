@@ -17,7 +17,7 @@ Stop at the first rung that holds:
 
 ## 2. Security & Lifecycle Invariants
 
-- **Minimal Privileges (MV3):** Strictly `storage`, `alarms`, `contextMenus`, and host permission `https://api.fastmail.com/*`. Never request broad scopes (`<all_urls>`, `tabs`, `cookies`).
+- **Minimal Privileges (MV3):** Strictly following manifest.json. Never request broad scopes (`<all_urls>`, `tabs`, `cookies`).
 - **Token Isolation:** Tokens stored exclusively in `chrome.storage.local` (never `sync`). Verified in-memory via JMAP session endpoint before saving. Wiped immediately on `401 Unauthorized` or disconnect via `clearSession()`.
 - **Iframe Sandbox & CSP:** Email bodies render in `<iframe sandbox="allow-popups allow-popups-to-escape-sandbox">`. Never permit `allow-scripts` or `allow-same-origin`. Enforce `default-src 'none'; img-src https: data:; style-src 'unsafe-inline';`. Inject `<base target="_blank">` to isolate link clicks.
 - **Escape Metadata:** Always pass dynamic header fields (`subject`, `from`, `to`, `date`) through `escapeHtml()`. Avoid string replacement tokens (`$&`, `$'`) by using function replacers in `String.prototype.replace`.
