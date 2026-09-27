@@ -36,4 +36,6 @@ export interface FetchUnreadResponse {
 export interface FetchEmailBodyResponse {
   body: string | null;
   isPlainText?: boolean;
+  error?: string;
 }
+

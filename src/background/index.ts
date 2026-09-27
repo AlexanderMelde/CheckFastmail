@@ -1,49 +1,67 @@
 import { getUnreadEmails, fetchSession, fetchEmailBody, clearSession } from './jmap';
 import type { MessageRequest } from '../types';
 
-const ALARM_NAME = 'POLL_FASTMAIL';
+export const ALARM_NAME = 'POLL_FASTMAIL';
 
-// Listen for messages from the UI
+// Listen for messages from popup or options UI
 chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResponse) => {
   if (message.type === 'TEST_AND_SAVE_TOKEN') {
     const token = message.token;
     chrome.storage.local.set({ access_token: token }, () => {
-      fetchSession(true).then((session) => {
-        if (session) {
-          updateBadge();
-          setupAlarm();
-          sendResponse({ success: true });
-        } else {
+      fetchSession(true)
+        .then((session) => {
+          if (session) {
+            sendResponse({ success: true });
+          } else {
+            clearSession().then(() => {
+              sendResponse({ success: false });
+            });
+          }
+        })
+        .catch(() => {
           clearSession().then(() => {
             sendResponse({ success: false });
           });
-        }
-      });
+        });
     });
     return true; // Indicates async response
   }
 
   if (message.type === 'FETCH_UNREAD') {
-    getUnreadEmails().then((result) => {
-      sendResponse(result);
-      if (result.notAuthenticated) {
-        updateBadgeCount(0);
-      } else if (result.emails) {
-        updateBadgeCount(result.emails.length);
-      }
-    });
+    getUnreadEmails()
+      .then((result) => {
+        sendResponse(result);
+        if (result.notAuthenticated) {
+          updateBadgeCount(0);
+        } else if (result.emails) {
+          updateBadgeCount(result.emails.length);
+        }
+      })
+      .catch((err) => {
+        sendResponse({
+          emails: [],
+          error: err instanceof Error ? err.message : 'Unknown error'
+        });
+      });
     return true;
   }
 
   if (message.type === 'FETCH_EMAIL_BODY') {
-    fetchEmailBody(message.emailId).then((result) => {
-      sendResponse(result);
-    });
+    fetchEmailBody(message.emailId)
+      .then((result) => {
+        sendResponse(result);
+      })
+      .catch((err) => {
+        sendResponse({
+          body: null,
+          error: err instanceof Error ? err.message : 'Unknown error'
+        });
+      });
     return true;
   }
 });
 
-async function updateBadgeCount(count: number) {
+export async function updateBadgeCount(count: number): Promise<void> {
   if (count > 0) {
     await chrome.action.setBadgeText({ text: count.toString() });
     await chrome.action.setBadgeBackgroundColor({ color: '#2563eb' }); // Fastmail Blue
@@ -52,7 +70,7 @@ async function updateBadgeCount(count: number) {
   }
 }
 
-async function updateBadge() {
+export async function updateBadge(): Promise<void> {
   const result = await getUnreadEmails();
   if (result.notAuthenticated) {
     await updateBadgeCount(0);
@@ -61,17 +79,32 @@ async function updateBadge() {
   }
 }
 
-function setupAlarm() {
+export function setupAlarm(): void {
   chrome.alarms.create(ALARM_NAME, { periodInMinutes: 5 });
 }
 
+// Background alarm listener
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM_NAME) {
     updateBadge();
   }
 });
 
-// Initial startup
+// Single root-cause lifecycle listener for token additions and removals
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'local' && 'access_token' in changes) {
+    const newToken = changes.access_token.newValue;
+    if (!newToken) {
+      chrome.alarms.clear(ALARM_NAME);
+      updateBadgeCount(0);
+    } else {
+      setupAlarm();
+      updateBadge();
+    }
+  }
+});
+
+// Initial service worker startup
 chrome.storage.local.get(['access_token'], (result) => {
   if (result.access_token) {
     setupAlarm();

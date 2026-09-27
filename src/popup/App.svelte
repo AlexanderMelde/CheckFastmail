@@ -37,6 +37,8 @@
 
       if (response && response.notAuthenticated) {
         notAuthenticated = true;
+      } else if (response && response.error) {
+        errorMsg = response.error;
       } else if (response && response.emails) {
         unreadEmails = response.emails;
         if (
@@ -80,7 +82,7 @@
             emailBody = response.body;
             isPlainText = Boolean(response.isPlainText);
           } else {
-            emailBody = "Could not load email content.";
+            emailBody = response?.error ? `Error: ${response.error}` : "Could not load email content.";
             isPlainText = true;
           }
         }
@@ -130,6 +132,20 @@
     <div
       class="w-1/3 min-w-[260px] max-w-[320px] border-r border-slate-200 overflow-y-auto bg-white flex flex-col custom-scrollbar"
     >
+      {#if errorMsg}
+        <div class="p-2.5 px-3 bg-red-50 border-b border-red-100 flex items-center justify-between text-xs text-red-700 shrink-0">
+          <span class="truncate pr-2">{errorMsg}</span>
+          <button
+            type="button"
+            onclick={handleRefresh}
+            disabled={isLoading}
+            class="text-red-700 underline font-medium hover:text-red-800 cursor-pointer disabled:opacity-50 shrink-0"
+          >
+            Retry
+          </button>
+        </div>
+      {/if}
+
       {#if isLoading && unreadEmails.length === 0}
         <div class="p-4 animate-pulse space-y-5">
           {#each Array(5) as _}
@@ -173,28 +189,34 @@
             Connect
           </button>
         </div>
-      {:else if errorMsg}
-        <div class="p-4 text-center text-red-500 text-sm">{errorMsg}</div>
       {:else if unreadEmails.length === 0}
-        <div
-          class="flex flex-col items-center justify-center h-full p-4 text-center text-slate-400"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-10 w-10 mb-2 opacity-30"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+        {#if !errorMsg}
+          <div
+            class="flex flex-col items-center justify-center h-full p-4 text-center text-slate-400"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.5"
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-          <p>Inbox zero!</p>
-        </div>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-10 w-10 mb-2 opacity-30"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            <p>Inbox zero!</p>
+          </div>
+        {:else}
+          <div
+            class="flex flex-col items-center justify-center h-full p-4 text-center text-slate-400"
+          >
+            <p class="text-sm">Unable to load messages.</p>
+          </div>
+        {/if}
       {:else}
         <ul class="flex-1">
           {#each unreadEmails as email (email.id)}

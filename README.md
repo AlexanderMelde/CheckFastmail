@@ -52,3 +52,7 @@ Built with **Svelte 5**, **Vite**, and **TypeScript**, running on Chrome Manifes
 npm run build
 ```
 Minifies and bundles all assets into `dist/`. Zip the `dist/` directory contents for Chrome Web Store submission.
+
+## Security & Guidelines
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for our development philosophy, "The Ladder", and Chrome Extension security standards.

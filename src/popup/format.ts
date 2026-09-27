@@ -50,7 +50,7 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
 
   const openUrl = 'https://www.fastmail.com/mail/Message/' + encodeURIComponent(email.id);
 
-  const cspMeta = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline';">`;
+  const securityHead = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline';"><base target="_blank">`;
 
   const headerHtml = `
     <style>
@@ -125,8 +125,8 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
 
   const bodyTagMatch = renderedBody.match(/<body[^>]*>/i);
   if (bodyTagMatch) {
-    return cspMeta + renderedBody.replace(bodyTagMatch[0], bodyTagMatch[0] + trackerFixStyle + headerHtml);
+    return securityHead + renderedBody.replace(bodyTagMatch[0], bodyTagMatch[0] + trackerFixStyle + headerHtml);
   } else {
-    return cspMeta + trackerFixStyle + headerHtml + renderedBody;
+    return securityHead + trackerFixStyle + headerHtml + renderedBody;
   }
 }

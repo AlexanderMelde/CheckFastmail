@@ -39,6 +39,16 @@
         isConnected = true;
       }
     });
+
+    const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName === 'local' && 'access_token' in changes) {
+        isConnected = Boolean(changes.access_token.newValue);
+      }
+    };
+    chrome.storage.onChanged.addListener(listener);
+    return () => {
+      chrome.storage.onChanged.removeListener(listener);
+    };
   });
 </script>
 

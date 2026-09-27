@@ -65,6 +65,25 @@ describe('Security: Untrusted and Malicious Email Rendering', () => {
     expect(output).toContain("default-src 'none'");
     // External images and data: allowed for inline icons, inline styles allowed for email rendering
     expect(output).toContain("img-src https: data:; style-src 'unsafe-inline';");
+    // Verify base target="_blank" is injected to isolate link clicks from the iframe
+    expect(output).toContain('<base target="_blank">');
+  });
+
+  it('enforces external tab navigation for all email links via <base target="_blank">', () => {
+    const email: EmailItem = {
+      id: 'msg-link-test',
+      subject: 'Link Test',
+      receivedAt: '2026-09-20T14:30:00Z'
+    };
+
+    const emailBody = '<p>Please visit <a href="https://example.com/login">this site</a>.</p>';
+    const output = buildIframeContent(email, emailBody);
+
+    expect(output).toContain('<base target="_blank">');
+    const baseIndex = output.indexOf('<base target="_blank">');
+    const bodyIndex = output.indexOf('<p>Please visit');
+    expect(baseIndex).toBeGreaterThan(-1);
+    expect(bodyIndex).toBeGreaterThan(baseIndex);
   });
 
   it('safely escapes plain text emails to neutralize HTML injection attacks', () => {

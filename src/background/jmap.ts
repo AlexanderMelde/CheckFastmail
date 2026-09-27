@@ -1,9 +1,9 @@
-import type { EmailItem, JmapSession, FetchEmailBodyResponse } from '../types';
+import type { EmailItem, JmapSession, FetchEmailBodyResponse, FetchUnreadResponse } from '../types';
 
 const SESSION_URL = 'https://api.fastmail.com/jmap/session';
 
 async function getAccessToken(): Promise<string | null> {
-  const result = await chrome.storage.local.get(['access_token']);
+  const result = (await chrome.storage.local.get(['access_token'])) || {};
   return (result.access_token as string) || null;
 }
 
@@ -13,7 +13,7 @@ export async function clearSession(): Promise<void> {
 
 export async function fetchSession(forceRefresh = false): Promise<JmapSession | null> {
   if (!forceRefresh) {
-    const result = await chrome.storage.local.get(['api_url', 'account_id']);
+    const result = (await chrome.storage.local.get(['api_url', 'account_id'])) || {};
     if (result.api_url && result.account_id) {
       return { apiUrl: result.api_url as string, accountId: result.account_id as string };
     }
@@ -39,7 +39,18 @@ export async function fetchSession(forceRefresh = false): Promise<JmapSession | 
     }
 
     const data = await response.json();
-    const accountId = data.primaryAccounts?.['urn:ietf:params:jmap:mail'];
+    let accountId = data.primaryAccounts?.['urn:ietf:params:jmap:mail'];
+    
+    // Fallback: search accounts map for mail capability if primaryAccounts is unset
+    if (!accountId && data.accounts) {
+      for (const [id, acc] of Object.entries(data.accounts as Record<string, { accountCapabilities?: Record<string, unknown> }>)) {
+        if (acc?.accountCapabilities?.['urn:ietf:params:jmap:mail']) {
+          accountId = id;
+          break;
+        }
+      }
+    }
+
     const apiUrl = data.apiUrl;
 
     if (!accountId || !apiUrl) {
@@ -58,7 +69,7 @@ export async function fetchSession(forceRefresh = false): Promise<JmapSession | 
 }
 
 export async function getInboxId(session: JmapSession, token: string): Promise<string | null> {
-  const result = await chrome.storage.local.get(['inbox_id']);
+  const result = (await chrome.storage.local.get(['inbox_id'])) || {};
   if (result.inbox_id) return result.inbox_id as string;
 
   try {
@@ -103,7 +114,7 @@ export async function getInboxId(session: JmapSession, token: string): Promise<s
   return null;
 }
 
-export async function getUnreadEmails(): Promise<{ emails: EmailItem[]; notAuthenticated?: boolean }> {
+export async function getUnreadEmails(): Promise<FetchUnreadResponse> {
   const token = await getAccessToken();
   if (!token) return { emails: [], notAuthenticated: true };
 
@@ -117,9 +128,8 @@ export async function getUnreadEmails(): Promise<{ emails: EmailItem[]; notAuthe
       filter.inMailbox = inboxId;
     }
 
-    // # ponytail: two-stage query/get fetch, back-reference single round-trip if latency matters
-    // Phase 1: Query for unread email IDs
-    const queryResponse = await fetch(session.apiUrl, {
+    // RFC 8620 §3.7: Single HTTP round-trip combining Email/query and Email/get via back-reference
+    const response = await fetch(session.apiUrl, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -136,84 +146,78 @@ export async function getUnreadEmails(): Promise<{ emails: EmailItem[]; notAuthe
               sort: [{ property: 'receivedAt', isAscending: false }],
               limit: 30
             },
-            '0'
-          ]
-        ]
-      })
-    });
-
-    if (queryResponse.status === 401) {
-      await clearSession();
-      return { emails: [], notAuthenticated: true };
-    }
-
-    if (!queryResponse.ok) {
-      return { emails: [] };
-    }
-
-    const queryData = await queryResponse.json();
-    const emailIds = queryData.methodResponses?.[0]?.[1]?.ids as string[] | undefined;
-
-    if (!emailIds || emailIds.length === 0) {
-      return { emails: [] };
-    }
-
-    // Phase 2: Get details for those IDs
-    const getResponse = await fetch(session.apiUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:mail'],
-        methodCalls: [
+            'q'
+          ],
           [
             'Email/get',
             {
               accountId: session.accountId,
-              ids: emailIds,
+              '#ids': {
+                resultOf: 'q',
+                name: 'Email/query',
+                path: '/ids'
+              },
               properties: ['id', 'threadId', 'subject', 'from', 'to', 'receivedAt', 'preview']
             },
-            '0'
+            'g'
           ]
         ]
       })
     });
 
-    if (getResponse.status === 401) {
+    if (response.status === 401) {
       await clearSession();
       return { emails: [], notAuthenticated: true };
     }
 
-    if (!getResponse.ok) {
-      return { emails: [] };
+    if (!response.ok) {
+      return { emails: [], error: `Server error (${response.status})` };
     }
 
-    const getData = await getResponse.json();
-    const list = (getData.methodResponses?.[0]?.[1]?.list as EmailItem[]) || [];
-    return { emails: list };
-  } catch {
+    const data = await response.json();
+    const methodResponses = data.methodResponses || [];
+
+    // Check for method-level errors
+    for (const [name, resp] of methodResponses) {
+      if (name === 'error') {
+        const errorType = (resp as { type?: string })?.type || 'unknown';
+        return { emails: [], error: `JMAP error: ${errorType}` };
+      }
+    }
+
+    // Find Email/get response ('g')
+    const getResponse = methodResponses.find(
+      ([name, _resp, id]: [string, unknown, string]) => name === 'Email/get' && id === 'g'
+    );
+    if (getResponse && (getResponse[1] as { list?: EmailItem[] })?.list) {
+      return { emails: (getResponse[1] as { list: EmailItem[] }).list };
+    }
+
     return { emails: [] };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Network error';
+    return { emails: [], error: `Network error: ${message}` };
   }
 }
 
 export function extractBodyFromEmail(email: any): { content: string; isPlainText: boolean } | null {
   if (!email || !email.bodyValues) return null;
 
-  // Try HTML body first
-  if (Array.isArray(email.htmlBody) && email.htmlBody.length > 0) {
-    const partId = email.htmlBody[0]?.partId;
-    if (partId && email.bodyValues[partId]?.value) {
-      return { content: email.bodyValues[partId].value, isPlainText: false };
+  // Try HTML body parts first
+  if (Array.isArray(email.htmlBody)) {
+    for (const part of email.htmlBody) {
+      if (part?.partId && email.bodyValues[part.partId]?.value) {
+        return { content: email.bodyValues[part.partId].value, isPlainText: false };
+      }
     }
   }
 
-  // Fallback to plain text body
-  if (Array.isArray(email.textBody) && email.textBody.length > 0) {
-    const partId = email.textBody[0]?.partId;
-    if (partId && email.bodyValues[partId]?.value) {
-      return { content: email.bodyValues[partId].value, isPlainText: true };
+  // Fallback to plain text body parts
+  if (Array.isArray(email.textBody)) {
+    for (const part of email.textBody) {
+      if (part?.partId && email.bodyValues[part.partId]?.value) {
+        return { content: email.bodyValues[part.partId].value, isPlainText: true };
+      }
     }
   }
 
@@ -222,9 +226,9 @@ export function extractBodyFromEmail(email: any): { content: string; isPlainText
 
 export async function fetchEmailBody(emailId: string): Promise<FetchEmailBodyResponse> {
   const session = await fetchSession();
-  if (!session) return { body: null };
+  if (!session) return { body: null, error: 'Not authenticated' };
   const token = await getAccessToken();
-  if (!token) return { body: null };
+  if (!token) return { body: null, error: 'Not authenticated' };
 
   try {
     const response = await fetch(session.apiUrl, {
@@ -253,14 +257,21 @@ export async function fetchEmailBody(emailId: string): Promise<FetchEmailBodyRes
 
     if (response.status === 401) {
       await clearSession();
-      return { body: null };
+      return { body: null, error: 'Authentication expired' };
     }
 
-    if (!response.ok) return { body: null };
+    if (!response.ok) {
+      return { body: null, error: `Server error (${response.status})` };
+    }
 
     const data = await response.json();
-    const email = data.methodResponses?.[0]?.[1]?.list?.[0];
-    if (!email) return { body: null };
+    const methodResponse = data.methodResponses?.[0];
+    if (methodResponse?.[0] === 'error') {
+      return { body: null, error: `JMAP error: ${methodResponse[1]?.type || 'unknown'}` };
+    }
+
+    const email = methodResponse?.[1]?.list?.[0];
+    if (!email) return { body: null, error: 'Email not found' };
 
     const extracted = extractBodyFromEmail(email);
     if (extracted) {
@@ -268,7 +279,8 @@ export async function fetchEmailBody(emailId: string): Promise<FetchEmailBodyRes
     }
 
     return { body: null };
-  } catch {
-    return { body: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Network error';
+    return { body: null, error: `Network error: ${message}` };
   }
 }
