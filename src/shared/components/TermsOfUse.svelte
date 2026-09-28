@@ -57,7 +57,16 @@
 
   <section>
     <h2 class="text-[15px] font-semibold text-slate-900 mb-2">
-      5. Applicable Law & Severability
+      5. Trademark Notice & Non-Affiliation
+    </h2>
+    <p class="m-0">
+      <strong>Fastmail</strong> is a registered trademark of Fastmail Pty Ltd. This extension and associated web pages are independent and not affiliated with, sponsored by, or endorsed by Fastmail Pty Ltd. Fastmail’s JMAP API is an open internet standard published by the IETF (RFC 8620 / RFC 8621).
+    </p>
+  </section>
+
+  <section>
+    <h2 class="text-[15px] font-semibold text-slate-900 mb-2">
+      6. Applicable Law & Severability
     </h2>
     <p class="mb-3">
       All legal relationships arising from the use of this extension shall be governed exclusively by the laws of the Federal Republic of Germany.

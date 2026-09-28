@@ -74,10 +74,15 @@
     {/if}
 
     <!-- Main Content Area -->
-    <main class="flex-1 py-6 px-4 sm:py-8 sm:px-10 overflow-y-auto max-w-[760px]">
-      {#if children}
-        {@render children()}
-      {/if}
+    <main class="flex-1 py-6 px-4 sm:py-8 sm:px-10 overflow-y-auto max-w-[760px] flex flex-col justify-between">
+      <div>
+        {#if children}
+          {@render children()}
+        {/if}
+      </div>
+      <footer class="mt-12 pt-4 border-t border-slate-200 text-[11px] text-slate-400 leading-normal">
+        Checker for Fastmail is an independent open-source project and is not affiliated with, sponsored by, or endorsed by Fastmail Pty Ltd. Fastmail is a registered trademark of Fastmail Pty Ltd.
+      </footer>
     </main>
   </div>
 </div>

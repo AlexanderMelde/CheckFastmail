@@ -49,6 +49,15 @@
 
   <section>
     <h2 class="text-[15px] font-semibold text-slate-900 mb-2">
+      Trademark Notice & Non-Affiliation
+    </h2>
+    <p class="m-0">
+      <strong>Fastmail</strong> is a registered trademark of Fastmail Pty Ltd. <strong>Checker for Fastmail</strong> is an independent open-source project developed by Alexander Melde and is not affiliated with, sponsored by, or endorsed by Fastmail Pty Ltd in any way.
+    </p>
+  </section>
+
+  <section>
+    <h2 class="text-[15px] font-semibold text-slate-900 mb-2">
       Disclaimer of Liability
     </h2>
     <p class="mb-3">
