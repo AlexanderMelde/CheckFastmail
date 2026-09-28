@@ -5,6 +5,8 @@ A lightning-fast, lightweight Chrome Extension for Fastmail users. Check and pre
 > [!NOTE]
 > **Disclaimer:** Checker for Fastmail is an independent open-source project and is not affiliated with, sponsored by, or endorsed by Fastmail Pty Ltd. Fastmail is a registered trademark of Fastmail Pty Ltd.
 
+![Checker for Fastmail Preview](src/site/assets/screenshot.png)
+
 Built with **Svelte 5**, **Vite**, and **TypeScript**, running on Chrome Manifest V3 (MV3). It uses Fastmail's standard **JMAP API** (RFC 8620 / RFC 8621) and securely stores a Fastmail API Token locally in the browser.
 
 ## Features
