@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Checker for Fastmail</title>
+    <script>
+      // Single Page App redirect for static hosts (GitHub Pages)
+      (function() {
+        var l = window.location;
+        var pathname = l.pathname;
+        var lastSlash = pathname.lastIndexOf('/');
+        var basePath = lastSlash >= 0 ? pathname.substring(0, lastSlash + 1) : '/';
+        var route = lastSlash >= 0 ? pathname.substring(lastSlash + 1) : '';
+        var search = l.search ? '&' + l.search.slice(1) : '';
+        l.replace(
+          l.protocol + '//' + l.host + basePath +
+          '?p=' + encodeURIComponent(route) +
+          search + l.hash
+        );
+      })();
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
