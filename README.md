@@ -13,11 +13,13 @@ Built with **Svelte 5**, **Vite**, and **TypeScript**, running on Chrome Manifes
 
 ## Project Structure
 
-- `src/background/`: Service Worker handling JMAP queries, token validation, and background alarm polling.
-- `src/popup/`: Svelte 5 application rendering the toolbar popup interface.
-- `src/options/`: Svelte 5 application for managing the Fastmail API token connection.
-- `src/types.ts`: Central TypeScript definitions and messaging contracts.
-- `src/styles/`: Global styles.
+- `src/extension/`: Chrome Extension application:
+  - `background/`: Service Worker handling JMAP queries, token validation, and background alarm polling.
+  - `popup/`: Svelte 5 application rendering the toolbar popup interface.
+  - `options/`: Svelte 5 application for managing the Fastmail API token connection.
+  - `services/`: Client services and messaging abstractions.
+- `src/site/`: Project homepage web application (Features, Installation, Develop, Legal).
+- `src/shared/`: Shared components (PageShell, Header, NavSidebar, Legal), unified router, types, and styles.
 
 ## Local Development & Testing
 
@@ -48,11 +50,23 @@ Built with **Svelte 5**, **Vite**, and **TypeScript**, running on Chrome Manifes
 
 ## Production Build
 
-```bash
-npm run build
-```
-Minifies and bundles all assets into `dist/`. Zip the `dist/` directory contents for Chrome Web Store submission.
+- **Build Chrome Extension (`dist/`):**
+  ```bash
+  npm run build
+  ```
+  Minifies and bundles all extension assets into `dist/`. Zip the `dist/` directory contents for Chrome Web Store submission.
 
-## Security & Guidelines
+- **Build Project Homepage (`dist-site/`):**
+  ```bash
+  npm run build:site
+  ```
+  Generates the static project website with HTML5 path routing and 404 fallback into `dist-site/` (ready for GitHub Pages or static web servers).
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for our development philosophy, "The Ladder", and Chrome Extension security standards.
+- **Build Both:**
+  ```bash
+  npm run build:all
+  ```
+
+## Contributing and Security Guidelines
+
+See [DEVELOPMENT.md](DEVELOPMENT.md).

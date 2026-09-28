@@ -7,6 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "dev:site": "vite -c vite.config.site.ts",
+    "build:site": "vite build -c vite.config.site.ts",
+    "preview:site": "vite preview -c vite.config.site.ts",
+    "build:all": "npm run build && npm run build:site",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
     "test": "vitest run"
   },

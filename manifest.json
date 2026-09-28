@@ -14,7 +14,7 @@
     "128": "icon-128.png"
   },
   "action": {
-    "default_popup": "src/popup/index.html",
+    "default_popup": "src/extension/popup/index.html",
     "default_title": "Checker for Fastmail",
     "default_icon": {
       "16": "icon-16.png",
@@ -23,11 +23,11 @@
     }
   },
   "options_ui": {
-    "page": "src/options/index.html",
+    "page": "src/extension/options/index.html",
     "open_in_tab": true
   },
   "background": {
-    "service_worker": "src/background/index.ts",
+    "service_worker": "src/extension/background/index.ts",
     "type": "module"
   }
 }
