@@ -17,4 +17,5 @@ Feature Ideas:
 Maintenance Ideas:
 - Run Performance Benchmarks
 - Run Accessibility Check
-- 
+- Move Components into a folder each, each with a script, style and test file next to each other
+- Remove Tailwind Dependency
