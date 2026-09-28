@@ -1,5 +1,5 @@
 <script lang="ts">
-  import screenshotPlaceholder from "../assets/screenshot-placeholder.png";
+  import screenshot from "../assets/screenshot.png";
 </script>
 
 <h1 class="text-[19px] font-bold text-slate-900 leading-6 m-0 mb-2">
@@ -15,12 +15,12 @@
   class="mb-8 rounded-xl border border-slate-200/80 bg-white p-2 shadow-sm overflow-hidden group"
 >
   <div
-    class="rounded-lg overflow-hidden border border-slate-100 bg-slate-50 relative aspect-[16/9]"
+    class="rounded-lg overflow-hidden border border-slate-100 bg-slate-50 relative"
   >
     <img
-      src={screenshotPlaceholder}
-      alt="Checker for Fastmail extension preview mockup"
-      class="w-full h-full object-cover object-top"
+      src={screenshot}
+      alt="Checker for Fastmail extension preview"
+      class="w-full h-auto block"
     />
   </div>
   <div class="px-3 py-2 text-center text-xs text-slate-400">
