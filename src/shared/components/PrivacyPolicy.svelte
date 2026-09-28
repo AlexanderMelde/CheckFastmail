@@ -9,13 +9,13 @@
 
   <section>
     <h2 class="text-[15px] font-semibold text-slate-900 mb-2">
-      Overview & Core Principles
+      Overview & Scope
     </h2>
     <p class="mb-3">
-      <strong>Checker for Fastmail</strong> is an open-source browser extension designed to provide secure, lightweight access to your Fastmail unread messages. We take the protection of your personal information very seriously.
+      This Privacy Policy applies to the <strong>Checker for Fastmail</strong> open-source browser extension and the official project website at <a href="https://check-fastmail.melde.net/" target="_blank" rel="noreferrer noopener" class="text-violet-600 hover:text-violet-800 underline">check-fastmail.melde.net</a>. We take the protection of your personal information very seriously.
     </p>
     <p class="m-0 font-medium text-slate-800">
-      Our primary principle: Zero external data collection. We operate with zero backend servers, zero telemetry, zero analytics scripts, and zero advertising trackers.
+      Our primary principle: Zero external data collection. We operate with zero proprietary backend servers, zero telemetry, zero analytics scripts, and zero advertising trackers.
     </p>
   </section>
 
@@ -30,7 +30,7 @@
 
   <section>
     <h2 class="text-[15px] font-semibold text-slate-900 mb-2">
-      Data Security & Local Storage
+      Data Security & Local Storage (Browser Extension)
     </h2>
     <ul class="list-disc list-inside space-y-1.5 m-0 pl-1">
       <li>
@@ -47,7 +47,7 @@
 
   <section>
     <h2 class="text-[15px] font-semibold text-slate-900 mb-2">
-      Collection & Processing of Personal Data
+      Collection & Processing of Personal Data (Browser Extension)
     </h2>
     <p class="mb-2">The extension does <strong>not</strong> collect or process any of the following:</p>
     <ul class="list-disc list-inside space-y-1 mb-3 pl-1 text-slate-600">
@@ -57,6 +57,38 @@
     </ul>
     <p class="m-0">
       Data processed pursuant to Art. 6(1)(b) GDPR (performance of service): Your Fastmail API token is used strictly to authenticate JMAP requests directly to Fastmail to fetch your unread email counts and previews at your explicit instruction.
+    </p>
+  </section>
+
+  <section>
+    <h2 class="text-[15px] font-semibold text-slate-900 mb-2">
+      Web Hosting & Server Log Files (Project Website)
+    </h2>
+    <p class="mb-2">
+      The project website (<a href="https://check-fastmail.melde.net/" target="_blank" rel="noreferrer noopener" class="text-violet-600 hover:text-violet-800 underline">check-fastmail.melde.net</a>) is hosted statically via <strong>GitHub Pages</strong>, provided by:
+    </p>
+    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 mb-3">
+      <strong>GitHub, Inc.</strong><br />
+      88 Colin P Kelly Jr St, San Francisco, CA 94107, USA
+    </div>
+    <p class="mb-2">
+      When you access the website, GitHub automatically collects and temporarily stores standard technical information in server log files that your browser transmits:
+    </p>
+    <ul class="list-disc list-inside space-y-1 mb-3 pl-1 text-slate-600">
+      <li>IP address of the accessing device</li>
+      <li>Date and time of server inquiry</li>
+      <li>Requested URL / file path and HTTP status code</li>
+      <li>Browser type, version, and operating system</li>
+      <li>Referrer URL (previously visited website)</li>
+    </ul>
+    <p class="mb-2">
+      <strong>Legal Basis & Purpose:</strong> This data processing is performed pursuant to Art. 6(1)(f) GDPR based on the legitimate interest in ensuring reliable provision, performance, and security of the website (including detection of abuse and DDoS mitigation).
+    </p>
+    <p class="mb-2">
+      <strong>Third-Country Data Transfer:</strong> GitHub, Inc. is certified under the EU-U.S. Data Privacy Framework (DPF) and complies with European data protection requirements through Standard Contractual Clauses (SCCs).
+    </p>
+    <p class="m-0">
+      <strong>No Cookies & No Analytics:</strong> The website does not store cookies on your device and does not use web analytics, tracking scripts, or external font/script delivery networks.
     </p>
   </section>
 

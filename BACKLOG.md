@@ -1,7 +1,7 @@
 TODOs:
 - Open source it
 - [x] Add Github Page build actions
-- Privacy.md link to site deployment
+- [x] Privacy.md link to site deployment
 - re-run code-review
 - [x] Add custom domain (check-fastmail.melde.net)
 - extract svg icons
