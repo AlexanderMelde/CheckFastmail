@@ -20,7 +20,7 @@
       <p class="m-0">76149 Karlsruhe, Germany</p>
       <p class="pt-2 m-0">
         <span class="text-slate-500">Email:</span>
-        <a href="mailto:info@melde.net" class="text-violet-600 hover:text-violet-800 underline ml-1">info@melde.net</a>
+        <a href="mailto:check-fastmail@melde.net" class="text-violet-600 hover:text-violet-800 underline ml-1">check-fastmail@melde.net</a>
       </p>
       <p class="m-0">
         <span class="text-slate-500">Website:</span>

@@ -2,7 +2,25 @@
   "name": "checkfastmail",
   "private": true,
   "version": "1.0.0",
+  "description": "Lightweight, privacy-first Fastmail unread email checker Chrome extension.",
   "license": "Apache-2.0",
+  "author": "Alexander Melde <check-fastmail@melde.net> (https://melde.net/)",
+  "homepage": "https://check-fastmail.melde.net",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AlexanderMelde/CheckFastmail.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AlexanderMelde/CheckFastmail/issues"
+  },
+  "keywords": [
+    "fastmail",
+    "chrome-extension",
+    "jmap",
+    "svelte5",
+    "typescript",
+    "privacy"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",

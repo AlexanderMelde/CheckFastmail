@@ -3,6 +3,10 @@
   "name": "Checker for Fastmail",
   "description": "Check your Fastmail unread messages quickly.",
   "version": "1.0.0",
+  "homepage_url": "https://check-fastmail.melde.net",
+  "author": {
+    "email": "check-fastmail@melde.net"
+  },
   "permissions": [
     "storage",
     "alarms",

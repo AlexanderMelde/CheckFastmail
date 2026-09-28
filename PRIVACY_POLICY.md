@@ -51,5 +51,5 @@ Under Articles 15 to 21 of the General Data Protection Regulation (GDPR), you ho
 For questions or inquiries regarding data protection, please contact the controller:
 
 **Alexander Melde**  
-Email: [info@melde.net](mailto:info@melde.net)  
+Email: [check-fastmail@melde.net](mailto:check-fastmail@melde.net)  
 Website: [https://melde.net/](https://melde.net/)

@@ -140,7 +140,7 @@
     <p class="m-0">
       For questions or inquiries regarding data protection, please contact the controller:
       <br />
-      <strong>Alexander Melde</strong> — <a href="mailto:info@melde.net" class="text-violet-600 hover:text-violet-800 underline">info@melde.net</a>
+      <strong>Alexander Melde</strong> — <a href="mailto:check-fastmail@melde.net" class="text-violet-600 hover:text-violet-800 underline">check-fastmail@melde.net</a>
     </p>
   </section>
 </div>
