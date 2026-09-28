@@ -5,7 +5,7 @@ TODOs:
 - re-run code-review
 - [x] Add custom domain (check-fastmail.melde.net)
 - extract svg icons
-- check if generic "google does some analytics for any extension" part is needed in privacy policy
+- [x] check if generic "google does some analytics for any extension" part is needed in privacy policy (added Platform Provider & Chrome Web Store Telemetry disclosure)
 - "not affiliated with fastmail" disclaimer on site and options page legal etc
 - Store Submission
 

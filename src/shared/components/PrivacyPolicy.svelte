@@ -94,6 +94,21 @@
 
   <section>
     <h2 class="text-[15px] font-semibold text-slate-900 mb-2">
+      Platform Provider & Chrome Web Store Telemetry
+    </h2>
+    <p class="mb-2">
+      The developer of this extension does not collect, store, or analyze any telemetry, usage metrics, or user behavior.
+    </p>
+    <p class="mb-2">
+      When installing, updating, or maintaining the extension via the Chrome Web Store, your browser communicates directly with Google LLC (1600 Amphitheatre Parkway, Mountain View, CA 94043, USA). Google may automatically process technical metadata (such as automated extension update checks, crash diagnostics, and aggregate installation counts) in accordance with <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer noopener" class="text-violet-600 hover:text-violet-800 underline">Google’s Privacy Policy</a>.
+    </p>
+    <p class="m-0">
+      The developer only receives access to anonymous, aggregate metrics (such as total active user counts) provided by Google and cannot associate this data with any individual user.
+    </p>
+  </section>
+
+  <section>
+    <h2 class="text-[15px] font-semibold text-slate-900 mb-2">
       Your Rights Under the GDPR
     </h2>
     <p class="mb-3">

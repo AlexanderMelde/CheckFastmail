@@ -37,10 +37,17 @@ When you visit the website, GitHub automatically collects and temporarily stores
 
 **Zero Cookies & Trackers:** The website does not set any cookies, does not use web analytics or tracking scripts, and does not load third-party fonts or external CDNs.
 
-## 3. Your Rights Under GDPR
+## 3. Platform Provider & Chrome Web Store Telemetry
+The developer of this extension does not collect, store, or analyze any telemetry, usage metrics, or user behavior.
+
+When installing, updating, or maintaining the extension via the Chrome Web Store, your browser communicates directly with Google LLC (1600 Amphitheatre Parkway, Mountain View, CA 94043, USA). Google may automatically process technical metadata (such as automated extension update checks, crash diagnostics, and aggregate installation counts) in accordance with [Google’s Privacy Policy](https://policies.google.com/privacy).
+
+The developer only receives access to anonymous, aggregate metrics (such as total active user counts) provided by Google and cannot associate this data with any individual user.
+
+## 4. Your Rights Under GDPR
 Under Articles 15 to 21 of the General Data Protection Regulation (GDPR), you hold the right to access, rectification, erasure, restriction of processing, data portability, and the right to object. You may wipe all locally stored extension tokens at any time by disconnecting your account in the extension settings. You also have the right to lodge a complaint with a data protection supervisory authority.
 
-## 4. Contact
+## 5. Contact
 For questions or inquiries regarding data protection, please contact the controller:
 
 **Alexander Melde**  
