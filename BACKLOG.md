@@ -1,14 +1,8 @@
 TODOs:
 - Open source it
-- [x] Add Github Page build actions
-- [x] Privacy.md link to site deployment
 - re-run code-review
-- [x] Add custom domain (check-fastmail.melde.net)
 - extract svg icons
-- [x] check if generic "google does some analytics for any extension" part is needed in privacy policy (added Platform Provider & Chrome Web Store Telemetry disclosure)
-- [x] "not affiliated with fastmail" disclaimer on site and options page legal etc (added to README, PageShell footer, Imprint, and Terms)
-- Store Submission
-- [x] License (Apache-2.0)
+- internationalization and german translation
 
 Feature Ideas:
 - Detect if Read or Write token is set, enable some features like mark-as-read when Write token is set (add lots of test to ensure only the ONE email is marked, and nothing else is written)
