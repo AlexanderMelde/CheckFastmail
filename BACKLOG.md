@@ -1,9 +1,9 @@
 TODOs:
 - Open source it
-- Add Github Page build actions
+- [x] Add Github Page build actions
 - Privacy.md link to site deployment
 - re-run code-review
-- (add custom domain?)
+- [x] Add custom domain (check-fastmail.melde.net)
 - extract svg icons
 - check if generic "google does some analytics for any extension" part is needed in privacy policy
 - "not affiliated with fastmail" disclaimer on site and options page legal etc
@@ -19,6 +19,7 @@ Feature Ideas:
 - User Icon in Options title bar when logged in
 - Support / Logs & Debug Info Page
 - Support / Contact us
+- Improve Plaintext Mail Rendering (Padding, Line Breaks, Font size etc)
 
 Maintenance Ideas:
 - Run Performance Benchmarks
