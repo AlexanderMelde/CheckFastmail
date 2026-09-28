@@ -65,9 +65,14 @@ export async function fetchSession(forceRefresh = false, tokenOverride?: string)
       }
     }
 
-    const apiUrl = data.apiUrl;
+    if (!accountId || !data.apiUrl || typeof data.apiUrl !== 'string') {
+      return null;
+    }
 
-    if (!accountId || !apiUrl) {
+    let apiUrl: string;
+    try {
+      apiUrl = new URL(data.apiUrl, SESSION_URL).href;
+    } catch {
       return null;
     }
 

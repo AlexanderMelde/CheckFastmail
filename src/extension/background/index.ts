@@ -51,7 +51,10 @@ chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResp
   if (!message || typeof message.type !== 'string') return;
 
   if (message.type === 'TEST_AND_SAVE_TOKEN') {
-    const token = message.token?.trim();
+    let token = message.token?.trim();
+    if (token && token.toLowerCase().startsWith('bearer ')) {
+      token = token.slice(7).trim();
+    }
     if (!token) {
       sendResponse({ success: false });
       return;
@@ -141,6 +144,8 @@ export async function updateBadge(): Promise<void> {
       const result = await getUnreadEmails();
       if (!result) return;
       applyUnreadResult(result);
+    } catch {
+      // Defensive boundary against unexpected worker lifecycle errors
     } finally {
       inFlightUpdateBadge = null;
     }
@@ -164,7 +169,7 @@ export function setupAlarm(): void {
 // Background alarm listener
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM_NAME) {
-    updateBadge();
+    updateBadge().catch(() => {});
   }
 });
 
@@ -189,7 +194,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
         STORAGE_KEYS.CACHED_TOTAL_COUNT
       ]);
       setupAlarm();
-      updateBadge();
+      updateBadge().catch(() => {});
     }
   }
 });
@@ -198,6 +203,6 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 chrome.storage.local.get([STORAGE_KEYS.ACCESS_TOKEN], (result) => {
   if (result?.[STORAGE_KEYS.ACCESS_TOKEN]) {
     setupAlarm();
-    updateBadge();
+    updateBadge().catch(() => {});
   }
 });

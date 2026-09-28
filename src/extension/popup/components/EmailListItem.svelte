@@ -12,12 +12,16 @@
 </script>
 
 <li
+  role="none"
   class="group relative border-b border-slate-100 last:border-0 transition-colors cursor-pointer {isSelected
     ? 'bg-[#f4f0fa]'
     : 'hover:bg-slate-50 bg-white'}"
 >
   <button
     type="button"
+    role="option"
+    aria-selected={isSelected}
+    id={`email-item-${email.id}`}
     onclick={() => onselect(email)}
     class="w-full text-left flex p-3 pr-4 gap-3 items-start outline-none focus-visible:ring-2 focus-visible:ring-[#8b45f3] focus-visible:ring-inset cursor-pointer bg-transparent border-none"
   >

@@ -26,6 +26,38 @@
   let truncationNotice = $derived(
     formatListTruncationNotice(emails.length, totalCount)
   );
+
+  function handleListKeydown(e: KeyboardEvent) {
+    if (emails.length === 0) return;
+    const currentIndex = emails.findIndex((item) => item.id === selectedEmailId);
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const nextIndex = currentIndex < emails.length - 1 ? currentIndex + 1 : 0;
+      onselect(emails[nextIndex]);
+      focusEmailButton(emails[nextIndex].id);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prevIndex = currentIndex > 0 ? currentIndex - 1 : emails.length - 1;
+      onselect(emails[prevIndex]);
+      focusEmailButton(emails[prevIndex].id);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      onselect(emails[0]);
+      focusEmailButton(emails[0].id);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      onselect(emails[emails.length - 1]);
+      focusEmailButton(emails[emails.length - 1].id);
+    }
+  }
+
+  function focusEmailButton(id: string) {
+    setTimeout(() => {
+      const btn = document.getElementById(`email-item-${id}`);
+      btn?.focus();
+    }, 0);
+  }
 </script>
 
 <div
@@ -68,7 +100,13 @@
       <p class="text-sm">No messages</p>
     </div>
   {:else}
-    <ul class="flex-1">
+    <ul
+      class="flex-1 outline-none"
+      role="listbox"
+      aria-label="Unread emails"
+      tabindex="0"
+      onkeydown={handleListKeydown}
+    >
       {#each emails as email (email.id)}
         <EmailListItem
           {email}

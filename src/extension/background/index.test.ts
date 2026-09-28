@@ -269,6 +269,33 @@ describe('Background Worker Lifecycle & Badge Management', () => {
       );
     });
 
+    it('strips leading Bearer prefix from token before testing and storing', async () => {
+      expect(callbacks.messageListener).toBeDefined();
+      mockJmap.fetchSession.mockResolvedValueOnce({
+        apiUrl: 'https://api.fastmail.com/jmap/api',
+        accountId: 'acc-bearer-test'
+      });
+
+      const sendResponse = vi.fn();
+      callbacks.messageListener(
+        { type: 'TEST_AND_SAVE_TOKEN', token: 'Bearer fm1-secret-token' },
+        {},
+        sendResponse
+      );
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith({ success: true });
+      });
+
+      expect(mockJmap.fetchSession).toHaveBeenCalledWith(true, 'fm1-secret-token');
+      expect(mockStorage.local.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          access_token: 'fm1-secret-token'
+        }),
+        expect.any(Function)
+      );
+    });
+
     it('rejects and does NOT write to local storage when token is invalid', async () => {
       expect(callbacks.messageListener).toBeDefined();
       mockJmap.fetchSession.mockResolvedValueOnce(null);

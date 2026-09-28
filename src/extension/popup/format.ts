@@ -48,6 +48,32 @@ export function escapeHtml(str?: string): string {
     .replace(/'/g, '&#39;');
 }
 
+export function linkifyPlainText(escapedText: string): string {
+  const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
+  return escapedText.replace(urlRegex, (matchedUrl) => {
+    let cleanUrl = matchedUrl;
+    let trailing = '';
+    while (cleanUrl.length > 0 && /[.,;:!?)]$/.test(cleanUrl)) {
+      if (cleanUrl.endsWith(')')) {
+        const openParens = (cleanUrl.match(/\(/g) || []).length;
+        const closeParens = (cleanUrl.match(/\)/g) || []).length;
+        if (closeParens > openParens) {
+          trailing = ')' + trailing;
+          cleanUrl = cleanUrl.slice(0, -1);
+          continue;
+        }
+        break;
+      } else {
+        trailing = cleanUrl.slice(-1) + trailing;
+        cleanUrl = cleanUrl.slice(0, -1);
+      }
+    }
+
+    if (!cleanUrl) return matchedUrl;
+    return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" style="color: #6366f1; text-decoration: underline;">${cleanUrl}</a>${trailing}`;
+  });
+}
+
 export function buildIframeContent(email: EmailItem, bodyContent: string, isPlainText = false): string {
   const subject = email.subject || '(No Subject)';
   const rawFromName = email.from?.[0]?.name;
@@ -141,7 +167,9 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
 
   let renderedBody = bodyContent;
   if (isPlainText) {
-    renderedBody = `<pre style="white-space: pre-wrap; word-break: break-word; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; padding: 18px; margin: 0; color: #1e293b;">${escapeHtml(bodyContent)}</pre>`;
+    const escaped = escapeHtml(bodyContent);
+    const linkified = linkifyPlainText(escaped);
+    renderedBody = `<pre style="white-space: pre-wrap; word-break: break-word; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; padding: 18px; margin: 0; color: #1e293b;">${linkified}</pre>`;
   }
 
   // Use replacer functions in all String.prototype.replace calls to prevent

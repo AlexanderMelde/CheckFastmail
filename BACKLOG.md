@@ -1,7 +1,5 @@
 TODOs:
 - Open source it
-- re-run code-review
-- extract svg icons
 - internationalization and german translation
 
 Feature Ideas:
@@ -14,13 +12,12 @@ Feature Ideas:
 - User Icon in Options title bar when logged in
 - Support / Logs & Debug Info Page
 - Support / Contact us
-- Improve Plaintext Mail Rendering (Padding, Line Breaks, Font size etc)
 
 Maintenance Ideas:
 - Run Performance Benchmarks
 - Run Accessibility Check
 - Move Components into a folder each, each with a script, style and test file next to each other
-- Remove Tailwind Dependency
+- Remove Tailwind Dependency (Works cleanly with @tailwindcss/postcss producing minimal output (~29kB gzip: ~6.4kB), but removing it in the future would eliminate ~130kB of dev tooling.)
 
 Future Expandability:
 - Full Compose and Reply functionality

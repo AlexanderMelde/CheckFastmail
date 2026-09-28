@@ -4,7 +4,8 @@ import {
   getInitials,
   escapeHtml,
   buildIframeContent,
-  formatListTruncationNotice
+  formatListTruncationNotice,
+  linkifyPlainText
 } from './format';
 import type { EmailItem } from '../../shared/types';
 
@@ -206,4 +207,58 @@ describe('formatListTruncationNotice', () => {
     expect(formatListTruncationNotice(0, 0)).toBeNull();
   });
 });
+
+describe('linkifyPlainText', () => {
+  it('converts HTTP and HTTPS URLs into secure external links', () => {
+    const input = 'Visit https://fastmail.com or http://example.org for more information.';
+    const output = linkifyPlainText(input);
+    expect(output).toContain('<a href="https://fastmail.com" target="_blank" rel="noopener noreferrer"');
+    expect(output).toContain('<a href="http://example.org" target="_blank" rel="noopener noreferrer"');
+  });
+
+  it('strips trailing punctuation from grammar such as periods, commas, and exclamation marks', () => {
+    const input = 'Go to https://check-fastmail.melde.net., or https://github.com/! Did you see https://example.com?';
+    const output = linkifyPlainText(input);
+    expect(output).toContain('<a href="https://check-fastmail.melde.net" target="_blank" rel="noopener noreferrer"');
+    expect(output).toContain('</a>.,');
+    expect(output).toContain('<a href="https://github.com/" target="_blank" rel="noopener noreferrer"');
+    expect(output).toContain('</a>!');
+    expect(output).toContain('<a href="https://example.com" target="_blank" rel="noopener noreferrer"');
+    expect(output).toContain('</a>?');
+  });
+
+  it('correctly handles URLs wrapped in parentheses vs URLs containing balanced parentheses', () => {
+    const wrapped = 'Check the docs (https://fastmail.com/docs).';
+    const outputWrapped = linkifyPlainText(wrapped);
+    expect(outputWrapped).toContain('( <a href="https://fastmail.com/docs" target="_blank"'.replace('( ', '('));
+    expect(outputWrapped).toContain('</a>).');
+
+    const balanced = 'See https://en.wikipedia.org/wiki/Fastmail_(company) for details.';
+    const outputBalanced = linkifyPlainText(balanced);
+    expect(outputBalanced).toContain('<a href="https://en.wikipedia.org/wiki/Fastmail_(company)" target="_blank" rel="noopener noreferrer"');
+  });
+
+  it('does not link non-HTTP schemes or invalid strings', () => {
+    const input = 'Call tel:+123456 or email mailto:test@example.com or javascript:alert(1)';
+    const output = linkifyPlainText(input);
+    expect(output).not.toContain('<a href="javascript:');
+    expect(output).not.toContain('<a href="tel:');
+    expect(output).not.toContain('<a href="mailto:');
+  });
+
+  it('renders clickable links in plain text email iframe previews', () => {
+    const sampleEmail: EmailItem = {
+      id: 'msg-plain-links',
+      subject: 'Plain Text with Links',
+      receivedAt: '2026-09-20T14:30:00Z'
+    };
+    const plainText = 'Please reset your password at https://app.fastmail.com/reset before tonight.';
+    const result = buildIframeContent(sampleEmail, plainText, true);
+
+    expect(result).toContain('<pre style=');
+    expect(result).toContain('<a href="https://app.fastmail.com/reset" target="_blank" rel="noopener noreferrer"');
+    expect(result).toContain('before tonight.');
+  });
+});
+
 

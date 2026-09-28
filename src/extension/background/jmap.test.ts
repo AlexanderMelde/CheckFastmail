@@ -325,6 +325,40 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       expect(result).toBeNull();
       expect(mockStorage.access_token).toBe('existing-valid-token');
     });
+
+    it('resolves relative apiUrl against session URL per RFC 8620 §2.1', async () => {
+      mockStorage = { access_token: 'tok-valid' };
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          apiUrl: '/jmap/custom-api',
+          primaryAccounts: { 'urn:ietf:params:jmap:mail': 'acc-rel' }
+        })
+      } as Response);
+
+      const session = await fetchSession(true);
+      expect(session).toEqual({
+        apiUrl: 'https://api.fastmail.com/jmap/custom-api',
+        accountId: 'acc-rel'
+      });
+      expect(mockStorage.api_url).toBe('https://api.fastmail.com/jmap/custom-api');
+    });
+
+    it('returns null if apiUrl is non-string or malformed', async () => {
+      mockStorage = { access_token: 'tok-valid' };
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          apiUrl: 12345,
+          primaryAccounts: { 'urn:ietf:params:jmap:mail': 'acc-bad' }
+        })
+      } as Response);
+
+      const session = await fetchSession(true);
+      expect(session).toBeNull();
+    });
   });
 
   describe('getInboxId', () => {
