@@ -35,9 +35,7 @@
   const navGroups: NavGroup[] = [
     {
       title: "Settings",
-      items: [
-        { id: "connection", label: "Connection", icon: "connection" },
-      ],
+      items: [{ id: "connection", label: "Connection", icon: "connection" }],
     },
     {
       title: "Legal",
@@ -51,7 +49,6 @@
 </script>
 
 <PageShell
-  title="Checker for Fastmail Options"
   groups={navGroups}
   activeId={router.current}
   onselect={(id) => router.navigate(id)}

@@ -62,20 +62,6 @@
     </a>
   {/snippet}
 
-  {#snippet sidebarFooter()}
-    <div class="flex items-center justify-between text-[11px] text-slate-400 pb-1">
-      <span>Checker for Fastmail</span>
-      <a
-        href={GITHUB_REPO_URL}
-        target="_blank"
-        rel="noreferrer noopener"
-        class="text-slate-400 hover:text-slate-600 underline"
-      >
-        GitHub
-      </a>
-    </div>
-  {/snippet}
-
   {#if router.current === "features"}
     <Features />
   {:else if router.current === "installation"}
