@@ -1,5 +1,6 @@
 TODOs:
-- Open source it
+- Curated Milestone Commits (Interactive Rebase)
+- Make Repo public
 - internationalization and german translation
 
 Feature Ideas:

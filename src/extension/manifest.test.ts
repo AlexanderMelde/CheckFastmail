@@ -52,4 +52,11 @@ describe('Manifest V3 Compliance & Least Privilege Invariants', () => {
     const bgPath = path.resolve(__dirname, '../..', manifest.background.service_worker);
     expect(fs.existsSync(bgPath), `Missing background worker: ${bgPath}`).toBe(true);
   });
+
+  it('keeps manifest.json version synchronized with package.json SemVer', () => {
+    const pkgPath = path.resolve(__dirname, '../../package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    expect(manifest.version).toBe(pkg.version);
+    expect(manifest.version).toMatch(/^\d+\.\d+\.\d+(\.\d+)?$/);
+  });
 });
