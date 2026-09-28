@@ -6,7 +6,7 @@
   Develop & Contribute
 </h1>
 <p class="text-[13px] text-slate-500 m-0 mb-6">
-  Checker for Fastmail is an open-source project licensed under the MIT License.
+  Checker for Fastmail is an open-source project licensed under the Apache License 2.0.
 </p>
 
 <div class="space-y-6 text-[13px] text-slate-700 leading-relaxed max-w-[680px]">

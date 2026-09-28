@@ -42,10 +42,13 @@
 
   <section>
     <h2 class="text-[15px] font-semibold text-slate-900 mb-2">
-      4. Open Source Licenses & Acknowledgments
+      4. Open Source License & Acknowledgments
     </h2>
     <p class="mb-2">
-      This extension is built with open-source software and open internet standards. We express our appreciation to the maintainers of the following technologies:
+      <strong>Checker for Fastmail</strong> is open-source software licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noreferrer noopener" class="text-violet-600 hover:text-violet-800 underline">Apache License 2.0</a>.
+    </p>
+    <p class="mb-2 text-slate-600">
+      We also express our appreciation to the maintainers of the following open technologies:
     </p>
     <ul class="list-disc list-inside space-y-1 m-0 pl-1">
       <li><strong>Svelte:</strong> Licensed under the <a href="https://github.com/sveltejs/svelte/blob/main/LICENSE.md" target="_blank" rel="noreferrer noopener" class="text-violet-600 hover:text-violet-800 underline">MIT License</a>.</li>

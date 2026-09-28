@@ -31,10 +31,10 @@
 
   <section>
     <h2 class="text-[15px] font-semibold text-slate-900 mb-2">
-      Copyright Notice
+      Copyright & Open Source License
     </h2>
     <p class="m-0">
-      All texts, graphics, layout, and source code of this extension are subject to copyright. Any reproduction, modification, distribution, or re-use—in whole or in part—requires prior written permission of the author, unless explicitly permitted under the applicable open-source license.
+      All source code, texts, graphics, and layouts are subject to copyright © 2026 Alexander Melde. This project is open-source software licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noreferrer noopener" class="text-violet-600 hover:text-violet-800 underline">Apache License 2.0</a>.
     </p>
   </section>
 

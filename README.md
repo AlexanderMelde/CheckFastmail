@@ -74,6 +74,10 @@ Built with **Svelte 5**, **Vite**, and **TypeScript**, running on Chrome Manifes
 
 See [DEVELOPMENT.md](DEVELOPMENT.md).
 
+## License
+
+This project is licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) file for the full license text.
+
 ## Disclaimer
 
 Checker for Fastmail is an independent open-source project and is not affiliated with, sponsored by, or endorsed by Fastmail Pty Ltd. Fastmail is a registered trademark of Fastmail Pty Ltd.
