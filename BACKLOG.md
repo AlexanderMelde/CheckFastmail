@@ -1,7 +1,4 @@
 TODOs:
-- Curated Milestone Commits (Interactive Rebase)
-- protect main branch
-- Make Repo public
 - internationalization and german translation
 
 Feature Ideas:
