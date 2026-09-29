@@ -1057,4 +1057,61 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       });
     });
   });
+
+  describe('Demo Mode Token Handling', () => {
+    it('returns synthetic demo session for demo token without making network calls', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+      const session = await fetchSession(true, 'demo');
+
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(session).toEqual({
+        apiUrl: 'https://api.fastmail.com/jmap/session',
+        accountId: 'demo-account',
+        isReadOnly: true
+      });
+    });
+
+    it('returns demo inbox ID for demo token', async () => {
+      const inboxId = await getInboxId({ apiUrl: '', accountId: '' }, 'demo');
+      expect(inboxId).toBe('demo-inbox');
+    });
+
+    it('returns 7 demo emails when demo token is active in storage without making network calls', async () => {
+      mockStorage = { access_token: 'demo' };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+      const result = await getUnreadEmails();
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(result.emails).toHaveLength(7);
+      expect(result.totalCount).toBe(7);
+      expect(result.emails[0].id).toBe('demo-1');
+      expect(result.error).toBeUndefined();
+      expect(result.notAuthenticated).toBeUndefined();
+    });
+
+    it('serves HTML and plain text bodies for demo emails when demo token is active', async () => {
+      mockStorage = { access_token: 'demo-token' };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+      const htmlBody = await fetchEmailBody('demo-1');
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(htmlBody.isPlainText).toBe(false);
+      expect(htmlBody.body).toContain('apple crumble');
+
+      const plainBody = await fetchEmailBody('demo-6');
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(plainBody.isPlainText).toBe(true);
+      expect(plainBody.body).toContain('open-air festival');
+    });
+
+    it('returns email not found error for non-existent demo email ID', async () => {
+      mockStorage = { access_token: 'demo' };
+      const result = await fetchEmailBody('demo-non-existent');
+      expect(result).toEqual({
+        body: null,
+        error: 'Email not found'
+      });
+    });
+  });
 });
+

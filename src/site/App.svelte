@@ -11,6 +11,8 @@
   import Imprint from "../shared/components/Imprint.svelte";
 
   const GITHUB_REPO_URL = "https://github.com/AlexanderMelde/CheckFastmail/";
+  const CHROME_STORE_URL =
+    "https://chromewebstore.google.com/detail/gamakacpnkebinhbakpcegdkflmbdcmp/";
 
   const router = new Router({
     mode: "path",
@@ -48,6 +50,18 @@
   onselect={(id) => router.navigate(id)}
 >
   {#snippet headerActions()}
+    <a
+      href={CHROME_STORE_URL}
+      target="_blank"
+      rel="noreferrer noopener"
+      title="Available on Chrome Web Store"
+      aria-label="Install Checker for Fastmail from Chrome Web Store"
+      class="header-btn"
+    >
+      <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+        <path d="M12 0C8.21 0 4.831 1.757 2.632 4.501l3.953 6.848A5.454 5.454 0 0 1 12 6.545h10.732A12 12 0 0 0 12 0zm-8.818 6.545a12.022 12.022 0 0 0-.637 5.455c0 4.673 2.668 8.723 6.545 10.732l3.953-6.848a5.454 5.454 0 0 1-5.455-5.455c0-1.488.594-2.839 1.564-3.834L3.182 6.545zm13.636.546a5.454 5.454 0 0 1 2.637 4.909c0 3.012-2.443 5.455-5.455 5.455a5.454 5.454 0 0 1-3.834-1.564l-3.953 6.848A12.001 12.001 0 0 0 12 24c6.627 0 12-5.373 12-12 0-1.923-.453-3.74-1.255-5.354H16.818zM12 8.182a3.818 3.818 0 1 0 0 7.636 3.818 3.818 0 0 0 0-7.636z"/>
+      </svg>
+    </a>
     <a
       href={GITHUB_REPO_URL}
       target="_blank"

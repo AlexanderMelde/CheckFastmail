@@ -2,6 +2,8 @@
 
 A lightning-fast, lightweight Chrome Extension for Fastmail users. Check and preview unread Fastmail emails directly from your browser toolbar via a secure two-pane layout without opening a new tab.
 
+[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Available-blue?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/gamakacpnkebinhbakpcegdkflmbdcmp/)
+
 > [!NOTE]
 > **Disclaimer:** Checker for Fastmail is an independent open-source project and is not affiliated with, sponsored by, or endorsed by Fastmail Pty Ltd. Fastmail is a registered trademark of Fastmail Pty Ltd.
 
@@ -15,6 +17,10 @@ Built with **Svelte 5**, **Vite**, and **TypeScript**, running on Chrome Manifes
 - **Privacy & Security First:** No added third-party servers, tracking scripts or zero analytics. Emails render inside an isolated viewer.
 - **Live Toolbar Badge:** Always know when you have incoming mail with an automatic, low-power unread badge right on your extension icon.
 - **Clean, Distraction-Free UI:** A modern, uncluttered interface built to let you check and read unread messages quickly without losing your workflow.
+
+## Installation
+
+Install the official extension directly from the [Chrome Web Store](https://chromewebstore.google.com/detail/gamakacpnkebinhbakpcegdkflmbdcmp/).
 
 ## Project Structure
 

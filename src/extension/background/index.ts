@@ -1,6 +1,7 @@
 import { getUnreadEmails, fetchSession, fetchEmailBody } from './jmap';
 import type { MessageRequest, FetchUnreadResponse } from '../../shared/types';
 import { STORAGE_KEYS } from '../../shared/types';
+import { isDemoToken, getDemoEmails } from '../../shared/demoData';
 
 export const ALARM_NAME = 'POLL_FASTMAIL';
 export const POLL_INTERVAL_MINUTES = 1;
@@ -58,6 +59,31 @@ chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResp
     if (!token) {
       sendResponse({ success: false });
       return;
+    }
+
+    if (isDemoToken(token)) {
+      const emails = getDemoEmails();
+      chrome.storage.local.remove([
+        STORAGE_KEYS.INBOX_ID,
+        STORAGE_KEYS.CACHED_EMAILS,
+        STORAGE_KEYS.CACHED_TOTAL_COUNT
+      ], () => {
+        chrome.storage.local.set(
+          {
+            [STORAGE_KEYS.ACCESS_TOKEN]: token,
+            [STORAGE_KEYS.API_URL]: 'https://api.fastmail.com/jmap/session',
+            [STORAGE_KEYS.ACCOUNT_ID]: 'demo-account',
+            [STORAGE_KEYS.IS_READ_ONLY]: true,
+            [STORAGE_KEYS.CACHED_EMAILS]: emails,
+            [STORAGE_KEYS.CACHED_TOTAL_COUNT]: emails.length
+          },
+          () => {
+            updateBadgeCount(emails.length).catch(() => {});
+            sendResponse({ success: true });
+          }
+        );
+      });
+      return true;
     }
 
     // Verify token in-memory before writing to local storage
@@ -177,7 +203,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 // Single root-cause lifecycle listener for token additions and removals
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === 'local' && STORAGE_KEYS.ACCESS_TOKEN in changes) {
-    const newToken = changes[STORAGE_KEYS.ACCESS_TOKEN].newValue;
+    const rawVal = changes[STORAGE_KEYS.ACCESS_TOKEN].newValue;
+    const newToken = typeof rawVal === 'string' && rawVal.trim() ? rawVal.trim() : null;
     if (!newToken) {
       chrome.alarms.clear(ALARM_NAME);
       updateBadgeCount(0);
@@ -190,11 +217,14 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
         STORAGE_KEYS.CACHED_TOTAL_COUNT
       ]);
     } else {
-      chrome.storage.local.remove([
-        STORAGE_KEYS.INBOX_ID,
-        STORAGE_KEYS.CACHED_EMAILS,
-        STORAGE_KEYS.CACHED_TOTAL_COUNT
-      ]);
+      const keysToRemove = isDemoToken(newToken)
+        ? [STORAGE_KEYS.INBOX_ID]
+        : [
+            STORAGE_KEYS.INBOX_ID,
+            STORAGE_KEYS.CACHED_EMAILS,
+            STORAGE_KEYS.CACHED_TOTAL_COUNT
+          ];
+      chrome.storage.local.remove(keysToRemove);
       setupAlarm();
       updateBadge().catch(() => {});
     }

@@ -1,5 +1,6 @@
 import type { EmailItem, JmapSession, FetchEmailBodyResponse, FetchUnreadResponse, EmailDetail } from '../../shared/types';
 import { STORAGE_KEYS, ALL_AUTH_KEYS } from '../../shared/types';
+import { isDemoToken, getDemoEmails, getDemoEmailBody } from '../../shared/demoData';
 
 const SESSION_URL = 'https://api.fastmail.com/jmap/session';
 export const HTTP_STATUS_UNAUTHORIZED = 401;
@@ -21,6 +22,14 @@ export async function clearSession(): Promise<void> {
 export async function fetchSession(forceRefresh = false, tokenOverride?: string): Promise<JmapSession | null> {
   const token = tokenOverride || (await getAccessToken());
   if (!token) return null;
+
+  if (isDemoToken(token)) {
+    return {
+      apiUrl: 'https://api.fastmail.com/jmap/session',
+      accountId: 'demo-account',
+      isReadOnly: true
+    };
+  }
 
   const isTestingToken = Boolean(tokenOverride);
 
@@ -104,6 +113,7 @@ export async function fetchSession(forceRefresh = false, tokenOverride?: string)
 }
 
 export async function getInboxId(session: JmapSession, token: string): Promise<string | null> {
+  if (isDemoToken(token)) return 'demo-inbox';
   const result = (await chrome.storage.local.get([STORAGE_KEYS.INBOX_ID])) || {};
   if (result[STORAGE_KEYS.INBOX_ID]) return result[STORAGE_KEYS.INBOX_ID] as string;
 
@@ -162,6 +172,14 @@ export async function getUnreadEmails(): Promise<FetchUnreadResponse> {
   inFlightGetUnreadEmails = (async () => {
     const token = await getAccessToken();
     if (!token) return { emails: [], notAuthenticated: true };
+
+    if (isDemoToken(token)) {
+      const emails = getDemoEmails();
+      return {
+        emails,
+        totalCount: emails.length
+      };
+    }
 
     const session = await fetchSession();
     if (!session) {
@@ -324,6 +342,14 @@ export async function fetchEmailBody(emailId: string): Promise<FetchEmailBodyRes
 
   const token = await getAccessToken();
   if (!token) return { body: null, error: 'Not authenticated' };
+
+  if (isDemoToken(token)) {
+    const demo = getDemoEmailBody(emailId);
+    if (demo) {
+      return { body: demo.body, isPlainText: demo.isPlainText };
+    }
+    return { body: null, error: 'Email not found' };
+  }
   const session = await fetchSession();
   if (!session) {
     const stillHasToken = await getAccessToken();

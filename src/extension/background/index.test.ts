@@ -270,6 +270,32 @@ describe('Background Worker Lifecycle & Badge Management', () => {
       );
     });
 
+    it('handles demo token and stores demo credentials and emails without calling fetchSession', async () => {
+      expect(callbacks.messageListener).toBeDefined();
+      const sendResponse = vi.fn();
+
+      callbacks.messageListener(
+        { type: 'TEST_AND_SAVE_TOKEN', token: 'demo' },
+        {},
+        sendResponse
+      );
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith({ success: true });
+      });
+
+      expect(mockJmap.fetchSession).not.toHaveBeenCalled();
+      expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '7' });
+      expect(mockStorage.local.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          access_token: 'demo',
+          account_id: 'demo-account',
+          cached_total_count: 7
+        }),
+        expect.any(Function)
+      );
+    });
+
     it('strips leading Bearer prefix from token before testing and storing', async () => {
       expect(callbacks.messageListener).toBeDefined();
       mockJmap.fetchSession.mockResolvedValueOnce({

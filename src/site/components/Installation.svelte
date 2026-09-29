@@ -1,5 +1,6 @@
 <script lang="ts">
-  const CHROME_STORE_URL = "https://chromewebstore.google.com/";
+  const CHROME_STORE_URL =
+    "https://chromewebstore.google.com/detail/gamakacpnkebinhbakpcegdkflmbdcmp/";
   const GITHUB_REPO_URL = "https://github.com/AlexanderMelde/CheckFastmail/";
 </script>
 
