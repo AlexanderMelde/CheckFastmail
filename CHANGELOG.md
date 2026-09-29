@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/AlexanderMelde/CheckFastmail/compare/checkfastmail-v1.2.0...checkfastmail-v1.2.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **backlog:** remove done entries ([#13](https://github.com/AlexanderMelde/CheckFastmail/issues/13)) ([5fefc78](https://github.com/AlexanderMelde/CheckFastmail/commit/5fefc7878d6aa342c59cea5cd1519c4833ef70a2))
+
 ## [1.2.0](https://github.com/AlexanderMelde/CheckFastmail/compare/checkfastmail-v1.1.0...checkfastmail-v1.2.0) (2026-09-29)
 
 
