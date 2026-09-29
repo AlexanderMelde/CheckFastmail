@@ -41,7 +41,7 @@
     "@tsconfig/svelte": "^5.0.8",
     "@types/chrome": "^0.3.0",
     "@types/node": "^26.6.3",
-    "@vitest/coverage-v8": "^3.2.7",
+    "@vitest/coverage-v8": "^5.0.2",
     "autoprefixer": "^10.6.1",
     "postcss": "^8.5.28",
     "svelte": "^5.57.1",
