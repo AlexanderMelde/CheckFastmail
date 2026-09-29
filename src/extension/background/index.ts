@@ -73,7 +73,8 @@ chrome.runtime.onMessage.addListener((message: MessageRequest, _sender, sendResp
               {
                 [STORAGE_KEYS.ACCESS_TOKEN]: token,
                 [STORAGE_KEYS.API_URL]: session.apiUrl,
-                [STORAGE_KEYS.ACCOUNT_ID]: session.accountId
+                [STORAGE_KEYS.ACCOUNT_ID]: session.accountId,
+                ...(typeof session.isReadOnly === 'boolean' ? { [STORAGE_KEYS.IS_READ_ONLY]: session.isReadOnly } : {})
               },
               () => {
                 sendResponse({ success: true });
@@ -184,6 +185,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
         STORAGE_KEYS.INBOX_ID,
         STORAGE_KEYS.API_URL,
         STORAGE_KEYS.ACCOUNT_ID,
+        STORAGE_KEYS.IS_READ_ONLY,
         STORAGE_KEYS.CACHED_EMAILS,
         STORAGE_KEYS.CACHED_TOTAL_COUNT
       ]);

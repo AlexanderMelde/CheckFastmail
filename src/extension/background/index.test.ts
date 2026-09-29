@@ -190,7 +190,7 @@ describe('Background Worker Lifecycle & Badge Management', () => {
   });
 
   describe('setupAlarm', () => {
-    it('schedules periodic background alarm with 5-minute interval if none exists', () => {
+    it('schedules periodic background alarm with 1-minute interval if none exists', () => {
       mockAlarms.get.mockImplementationOnce((_name, cb) => cb(null));
       setupAlarm();
       expect(mockAlarms.create).toHaveBeenCalledWith(ALARM_NAME, { periodInMinutes: POLL_INTERVAL_MINUTES });
@@ -215,6 +215,7 @@ describe('Background Worker Lifecycle & Badge Management', () => {
         'inbox_id',
         'api_url',
         'account_id',
+        'is_read_only',
         'cached_emails',
         'cached_total_count'
       ]);

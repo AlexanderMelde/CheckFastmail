@@ -27,18 +27,24 @@ export class PopupState {
 
   constructor(deps: PopupStateDependencies = {}) {
     this.client = deps.client ?? extensionClient;
-    this.minSpinnerDurationMs = deps.minSpinnerDurationMs ?? 300;
+    this.minSpinnerDurationMs = deps.minSpinnerDurationMs ?? 0;
   }
 
   async init(): Promise<void> {
     try {
       const cached = await this.client.getCachedUnread();
-      if (cached.emails && cached.emails.length > 0) {
-        this.unreadEmails = cached.emails;
-        this.totalCount = cached.totalCount;
+      const hasValidCache =
+        typeof cached.totalCount === 'number' ||
+        (Array.isArray(cached.emails) && cached.emails.length > 0);
+
+      if (hasValidCache) {
+        this.unreadEmails = cached.emails || [];
+        this.totalCount = cached.totalCount ?? this.unreadEmails.length;
         this.hasInitialized = true;
         this.isLoading = false;
-        await this.selectEmail(cached.emails[0]);
+        if (this.unreadEmails.length > 0) {
+          await this.selectEmail(this.unreadEmails[0]);
+        }
         // Silently revalidate fresh state in background
         await this.fetchEmails(true);
       } else {
@@ -87,7 +93,9 @@ export class PopupState {
         if (this.unreadEmails.length > 0) {
           const stillSelected =
             this.selectedEmail && this.unreadEmails.find((e) => e.id === this.selectedEmail?.id);
-          if (!stillSelected) {
+          if (stillSelected) {
+            this.selectedEmail = stillSelected;
+          } else {
             await this.selectEmail(this.unreadEmails[0]);
           }
         } else {

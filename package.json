@@ -31,7 +31,8 @@
     "preview:site": "vite preview -c vite.config.site.ts",
     "build:all": "npm run build && npm run build:site",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage --coverage.include=src/** --coverage.exclude=src/**/*.test.ts --coverage.exclude=src/vite-env.d.ts"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.7.1",
@@ -40,6 +41,7 @@
     "@tsconfig/svelte": "^5.0.8",
     "@types/chrome": "^0.3.0",
     "@types/node": "^24.13.3",
+    "@vitest/coverage-v8": "^3.2.7",
     "autoprefixer": "^10.5.4",
     "postcss": "^8.5.26",
     "svelte": "^5.56.8",

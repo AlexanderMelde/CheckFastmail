@@ -96,7 +96,7 @@ export function buildIframeContent(email: EmailItem, bodyContent: string, isPlai
 
   const openUrl = FASTMAIL_MESSAGE_URL_PREFIX + encodeURIComponent(email.id);
 
-  const securityHead = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline';"><base target="_blank">`;
+  const securityHead = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline';"><base href="https://app.fastmail.com/" target="_blank">`;
 
   const headerHtml = `
     <style>

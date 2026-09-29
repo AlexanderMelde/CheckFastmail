@@ -242,6 +242,42 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       expect(mockStorage.account_id).toBe('acc-primary-mail');
     });
 
+    it('extracts and caches isReadOnly account capability per RFC 8620 §1.6.2', async () => {
+      mockStorage = { access_token: 'tok-valid' };
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          apiUrl: 'https://api.fastmail.com/jmap/api/',
+          primaryAccounts: {
+            'urn:ietf:params:jmap:mail': 'acc-readonly'
+          },
+          accounts: {
+            'acc-readonly': {
+              name: 'alex@example.com',
+              isReadOnly: true,
+              accountCapabilities: {
+                'urn:ietf:params:jmap:mail': {}
+              }
+            }
+          }
+        })
+      } as Response);
+
+      const session = await fetchSession(true);
+      expect(session).toEqual({
+        apiUrl: 'https://api.fastmail.com/jmap/api/',
+        accountId: 'acc-readonly',
+        isReadOnly: true
+      });
+      expect(mockStorage.is_read_only).toBe(true);
+
+      // Verify cached read when forceRefresh is false
+      const cachedSession = await fetchSession(false);
+      expect(cachedSession?.isReadOnly).toBe(true);
+    });
+
     it('falls back to accounts map if primaryAccounts mail capability is unset', async () => {
       mockStorage = { access_token: 'tok-valid' };
 
@@ -775,6 +811,47 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       expect(res1.emails[0].id).toBe('dedup-1');
       expect(res2.emails[0].id).toBe('dedup-1');
     });
+
+    it('returns error when response has no methodResponses (captive portal or network proxy HTML 200)', async () => {
+      mockStorage = {
+        access_token: 'valid-token',
+        api_url: 'https://api.fastmail.com/jmap/api/',
+        account_id: 'acc-mail',
+        inbox_id: 'inbox-1'
+      };
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          htmlContent: '<html><body>Login to WiFi</body></html>'
+        })
+      } as Response);
+
+      const result = await getUnreadEmails();
+      expect(result.emails).toEqual([]);
+      expect(result.error).toBe('Invalid response from JMAP server');
+      // Must NOT be marked as true inbox zero without error
+      expect(result.totalCount).toBeUndefined();
+    });
+
+    it('handles HTTP 429 Too Many Requests with rate limit error message', async () => {
+      mockStorage = {
+        access_token: 'valid-token',
+        api_url: 'https://api.fastmail.com/jmap/api/',
+        account_id: 'acc-mail',
+        inbox_id: 'inbox-1'
+      };
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: false,
+        status: 429
+      } as Response);
+
+      const result = await getUnreadEmails();
+      expect(result.emails).toEqual([]);
+      expect(result.error).toContain('Rate limit exceeded (HTTP 429)');
+    });
   });
 
   describe('fetchEmailBody', () => {
@@ -938,6 +1015,45 @@ describe('JMAP Client & Spec Compliance (RFC 8620 / RFC 8621)', () => {
       expect(result).toEqual({
         body: null,
         error: 'JMAP error: invalidArguments: Invalid property requested'
+      });
+    });
+
+    it('handles HTTP 429 rate limit in fetchEmailBody', async () => {
+      mockStorage = {
+        access_token: 'valid-token',
+        api_url: 'https://api.fastmail.com/jmap/api/',
+        account_id: 'acc-mail'
+      };
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: false,
+        status: 429
+      } as Response);
+
+      const result = await fetchEmailBody('msg-rate-limited');
+      expect(result).toEqual({
+        body: null,
+        error: 'Rate limit exceeded (HTTP 429). Please try again shortly.'
+      });
+    });
+
+    it('handles missing methodResponses in fetchEmailBody', async () => {
+      mockStorage = {
+        access_token: 'valid-token',
+        api_url: 'https://api.fastmail.com/jmap/api/',
+        account_id: 'acc-mail'
+      };
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ invalid: true })
+      } as Response);
+
+      const result = await fetchEmailBody('msg-malformed');
+      expect(result).toEqual({
+        body: null,
+        error: 'Invalid response from JMAP server'
       });
     });
   });

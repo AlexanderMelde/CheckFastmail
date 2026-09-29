@@ -77,7 +77,7 @@ describe('PopupState Model & SWR Lifecycle', () => {
     it('performs standard fetch when no cached emails exist', async () => {
       vi.mocked(mockClient.getCachedUnread).mockResolvedValueOnce({
         emails: [],
-        totalCount: 0
+        totalCount: undefined
       });
 
       vi.mocked(mockClient.fetchUnread).mockResolvedValueOnce({
@@ -93,6 +93,30 @@ describe('PopupState Model & SWR Lifecycle', () => {
       expect(state.selectedEmail?.id).toBe('email-2');
       expect(state.hasInitialized).toBe(true);
       expect(state.isLoading).toBe(false);
+    });
+
+    it('instantly hydrates Inbox Zero state when cached totalCount is 0 without showing initial loading', async () => {
+      vi.mocked(mockClient.getCachedUnread).mockResolvedValueOnce({
+        emails: [],
+        totalCount: 0
+      });
+
+      vi.mocked(mockClient.fetchUnread).mockResolvedValueOnce({
+        emails: [],
+        totalCount: 0
+      });
+
+      const state = new PopupState({ client: mockClient, minSpinnerDurationMs: 0 });
+      await state.init();
+
+      // State is immediately initialized as inbox zero
+      expect(state.unreadEmails).toEqual([]);
+      expect(state.totalCount).toBe(0);
+      expect(state.hasInitialized).toBe(true);
+      expect(state.isLoading).toBe(false);
+      expect(state.selectedEmail).toBeNull();
+      // Silently revalidated in background
+      expect(mockClient.fetchUnread).toHaveBeenCalled();
     });
   });
 
@@ -219,14 +243,16 @@ describe('PopupState Model & SWR Lifecycle', () => {
       await state.selectEmail(mockEmail2);
       expect(state.selectedEmail?.id).toBe('email-2');
 
-      // Now background refresh runs, returning both emails
+      // Now background refresh runs, returning updated email objects
+      const updatedEmail2 = { ...mockEmail2, subject: 'Second Email (Updated Subject)' };
       vi.mocked(mockClient.fetchUnread).mockResolvedValueOnce({
-        emails: [mockEmail1, mockEmail2]
+        emails: [mockEmail1, updatedEmail2]
       });
       await state.refresh();
 
-      // Selection must remain on email-2
+      // Selection must remain on email-2 and reflect the updated object
       expect(state.selectedEmail?.id).toBe('email-2');
+      expect(state.selectedEmail?.subject).toBe('Second Email (Updated Subject)');
     });
 
     it('falls back to first email when previously selected email was removed/read', async () => {

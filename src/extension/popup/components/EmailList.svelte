@@ -104,6 +104,7 @@
       class="flex-1 outline-none"
       role="listbox"
       aria-label="Unread emails"
+      aria-activedescendant={selectedEmailId ? `email-item-${selectedEmailId}` : undefined}
       tabindex="0"
       onkeydown={handleListKeydown}
     >
