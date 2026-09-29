@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/AlexanderMelde/CheckFastmail/compare/checkfastmail-v1.1.0...checkfastmail-v1.2.0) (2026-09-29)
+
+
+### Features
+
+* **popup:** add demo mode ([#3](https://github.com/AlexanderMelde/CheckFastmail/issues/3)) ([19e1eb6](https://github.com/AlexanderMelde/CheckFastmail/commit/19e1eb6862bb5ca324391e49974e9ba34a530572))
+
 ## [1.1.0](https://github.com/AlexanderMelde/CheckFastmail/compare/checkfastmail-v1.0.0...checkfastmail-v1.1.0) (2026-09-29)
 
 
