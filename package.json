@@ -37,18 +37,18 @@
   "devDependencies": {
     "@crxjs/vite-plugin": "^3.0.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
-    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/postcss": "^4.3.4",
     "@tsconfig/svelte": "^5.0.8",
-    "@types/chrome": "^0.3.0",
-    "@types/node": "^26.6.3",
+    "@types/chrome": "^0.3.7",
+    "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^3.2.7",
-    "autoprefixer": "^10.6.1",
-    "postcss": "^8.5.28",
-    "svelte": "^5.57.1",
-    "svelte-check": "^4.7.3",
+    "autoprefixer": "^10.6.2",
+    "postcss": "^8.5.32",
+    "svelte": "^5.57.3",
+    "svelte-check": "^4.7.8",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
-    "vite": "^8.3.1",
+    "vite": "^8.3.6",
     "vitest": "^3.2.7"
   }
 }
